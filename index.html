@@ -1,0 +1,2017 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>Korean-Myanmar Flashcards</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #f7f7f7;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 30px;
+      margin: 0;
+    }
+    h2 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    /* Top Controls for Flashcard Mode */
+    .top-controls {
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .search-container {
+      width: 100%;
+      display: flex;
+      justify-content: flex-end; /* Align search to right */
+      margin-bottom: 10px;
+    }
+    .search-container input[type="text"] {
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 16px;
+      width: 250px;
+      max-width: 100%;
+    }
+
+    /* Flashcard Grid (3x3) - Default Mode */
+    #flashcard-mode {
+      display: flex; /* Changed from block to flex for proper centering */
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 900px; /* Max width for the grid container */
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr); /* 3 columns */
+      gap: 20px;
+      width: 100%;
+      justify-items: center;
+      margin-bottom: 30px;
+    }
+    .card {
+      width: 200px;
+      height: 150px;
+      background-color: transparent;
+      perspective: 1000px;
+      cursor: pointer;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .card-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transition: transform 0.6s;
+      transform-style: preserve-3d;
+      border-radius: 10px;
+    }
+    .card.flipped .card-inner {
+      transform: rotateY(180deg);
+    }
+    .card-front, .card-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      backface-visibility: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      font-size: 24px;
+      font-weight: bold;
+      color: #333;
+      box-sizing: border-box;
+      padding: 10px;
+      text-align: center;
+      word-break: break-word;
+    }
+    .card-front {
+      background-color: #fff;
+      color: #555;
+    }
+    .card-back {
+      background-color: #e6f7ff;
+      color: #007bff;
+      transform: rotateY(180deg);
+      font-size: 20px;
+    }
+
+    /* Audio text in card */
+    .card .audio-text {
+      font-size: 16px;
+      color: #007bff;
+      text-decoration: underline;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    .card .audio-text:hover {
+      color: #0056b3;
+    }
+    .card .audio-text.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      text-decoration: none;
+    }
+
+
+    /* Pagination */
+    .nav {
+      margin-top: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      max-width: 900px;
+      margin-bottom: 30px;
+    }
+    .nav button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      border: 1px solid #ccc;
+      background-color: #eee;
+      border-radius: 5px;
+    }
+    .nav button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .page-info {
+      margin: 0 15px;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .page-info input {
+      width: 50px;
+      padding: 5px;
+      text-align: center;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+
+    /* History section styles */
+    .history-link {
+      margin-top: 20px;
+      font-size: 18px;
+      text-decoration: underline;
+      color: blue;
+      cursor: pointer;
+      margin-bottom: 30px; /* Space above new study mode link */
+    }
+    .history-modal {
+      display: none;
+      position: fixed;
+      z-index: 100;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.4);
+      justify-content: center;
+      align-items: center;
+    }
+    .history-content {
+      background-color: #fefefe;
+      margin: auto;
+      padding: 25px;
+      border: 1px solid #888;
+      width: 80%;
+      max-width: 650px;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+    .history-content h3 {
+      text-align: center;
+      margin-top: 0;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 10px;
+      font-size: 22px;
+      color: #333;
+    }
+    .history-content ul {
+      list-style-type: none;
+      padding: 0;
+    }
+    .history-content li {
+      padding: 10px 0;
+      border-bottom: 1px dashed #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 16px;
+      color: #555;
+    }
+    .history-content li:last-child {
+      border-bottom: none;
+    }
+    .history-content li .ko-mm-text {
+      flex-grow: 1;
+      margin-right: 10px;
+    }
+    .history-content li .count-text {
+      color: #888;
+      font-size: 14px;
+      margin-right: 10px;
+      white-space: nowrap;
+    }
+    .close-button {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .close-button:hover,
+    .close-button:focus {
+      color: black;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .clear-history-btn {
+      margin-top: 20px;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      background-color: #f44336;
+      color: white;
+      border: none;
+      font-size: 16px;
+    }
+
+    /* Link to activate Study Mode */
+    .study-mode-link {
+      font-size: 18px;
+      text-decoration: underline;
+      color: purple;
+      cursor: pointer;
+      margin-top: 20px;
+      margin-bottom: 20px;
+    }
+    .study-mode-link:hover {
+        color: darkpurple;
+    }
+
+    /* Day Study Mode - New Layout */
+    #day-study-mode {
+      display: none; /* Hidden by default */
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 700px; /* Wider for two columns */
+      padding: 20px;
+      background-color: #fff;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      margin-bottom: 30px;
+    }
+    #day-study-mode h3 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #333;
+      font-size: 24px;
+    }
+    .study-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        margin-bottom: 20px;
+        padding: 0 10px;
+        flex-wrap: wrap; /* Allow wrapping on smaller screens */
+        gap: 10px; /* Space between items if wrapped */
+    }
+    .study-controls .day-nav-buttons {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .study-controls .day-nav-buttons button {
+        padding: 8px 15px;
+        font-size: 16px;
+        cursor: pointer;
+        border: 1px solid #ccc;
+        background-color: #eee;
+        border-radius: 5px;
+    }
+    .study-controls .day-nav-buttons button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    .study-controls .day-display {
+        font-size: 20px;
+        font-weight: bold;
+        color: #555;
+        min-width: 80px; /* Ensure day display has enough space */
+        text-align: center;
+    }
+    .study-controls .toggle-buttons button {
+      padding: 8px 12px;
+      font-size: 14px;
+      cursor: pointer;
+      border: 1px solid #bbb;
+      background-color: #f0f0f0;
+      border-radius: 5px;
+      margin-left: 5px;
+    }
+    .study-controls .toggle-buttons button.active {
+      background-color: #007bff;
+      color: white;
+      border-color: #007bff;
+    }
+
+    .study-list {
+      width: 100%;
+      display: flex;
+      flex-direction: column; /* Vertical list */
+      gap: 10px; /* Space between items */
+    }
+    .study-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 15px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      background-color: #f9f9f9;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .study-item .ko-text {
+      flex: 1;
+      font-size: 18px;
+      font-weight: 500;
+      color: #333;
+      text-align: right;
+      padding-right: 15px;
+      transition: opacity 0.3s ease;
+    }
+    .study-item .mm-text {
+      flex: 1;
+      font-size: 18px;
+      font-weight: 500;
+      color: #333;
+      text-align: left;
+      padding-left: 15px;
+      transition: opacity 0.3s ease;
+    }
+    .study-item .audio-text {
+      font-size: 15px;
+      color: #007bff;
+      text-decoration: underline;
+      cursor: pointer;
+      white-space: nowrap;
+      margin: 0 10px; /* Space it out from text */
+    }
+    .study-item .audio-text:hover {
+      color: #0056b3;
+    }
+    .study-item .audio-text.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      text-decoration: none;
+    }
+
+    /* Hide/show for study mode */
+    .study-item .ko-text.hidden, .study-item .mm-text.hidden {
+      opacity: 0;
+      pointer-events: none; /* Make text not clickable when hidden */
+    }
+
+    /* Back button for Study Mode */
+    .back-to-main-button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      border: 1px solid #ccc;
+      background-color: #f0f0f0;
+      border-radius: 5px;
+    }
+    .back-to-main-button:hover {
+      background-color: #e0e0e0;
+    }
+
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .grid {
+        grid-template-columns: repeat(2, 1fr); /* 2 columns on smaller screens */
+      }
+      .card {
+        width: 180px;
+        height: 130px;
+      }
+      .card-front, .card-back {
+        font-size: 20px;
+      }
+      .card-back {
+        font-size: 18px;
+      }
+      .day-buttons {
+        gap: 6px;
+        padding: 0 5px;
+      }
+      .day-buttons button {
+        padding: 6px 10px;
+        font-size: 14px;
+        min-width: 50px;
+      }
+      .history-content {
+        width: 95%;
+        padding: 15px;
+      }
+      .history-content h3 {
+        font-size: 20px;
+      }
+      .history-content li {
+        font-size: 15px;
+      }
+      #day-study-mode {
+        max-width: 95%;
+        padding: 10px;
+      }
+      .study-item .ko-text, .study-item .mm-text {
+        font-size: 16px;
+      }
+    }
+    @media (max-width: 480px) {
+      .grid {
+        grid-template-columns: 1fr; /* 1 column on very small screens */
+      }
+      .card {
+        width: 250px; /* Make single card wider */
+        height: 180px;
+      }
+      .card-front, .card-back {
+        font-size: 22px;
+      }
+      .card-back {
+        font-size: 20px;
+      }
+      .search-container {
+        justify-content: center;
+      }
+      .search-container input[type="text"] {
+        width: 90%;
+      }
+      .nav button, .page-info {
+        font-size: 14px;
+        padding: 8px 15px;
+      }
+      .page-info input {
+        width: 40px;
+      }
+      .study-controls {
+          flex-direction: column;
+          gap: 10px;
+      }
+      .study-controls .day-nav-buttons {
+          width: 100%;
+          display: flex;
+          justify-content: center;
+          gap: 10px;
+      }
+      .study-controls .toggle-buttons {
+          width: 100%;
+          display: flex;
+          justify-content: center;
+      }
+      .study-item {
+          flex-direction: column; /* Stack ko/mm */
+          align-items: flex-start;
+          gap: 5px;
+          padding: 10px;
+      }
+      .study-item .ko-text, .study-item .mm-text {
+          width: 100%;
+          text-align: left;
+          border-right: none;
+          padding-right: 0;
+          padding-left: 0;
+      }
+      .study-item .mm-text {
+          margin-top: 5px;
+      }
+      .study-item .audio-text {
+          position: static; /* Place it below text */
+          transform: none;
+          margin-top: 5px;
+          display: block; /* Take full width */
+      }
+    }
+  </style>
+</head>
+<body>
+  <h2>Korean - Myanmar Flashcards</h2>
+
+  <div id="flashcard-mode">
+    <div class="top-controls">
+      <div class="search-container">
+        <input type="text" id="search-input" placeholder="ကိုရီးယားစာလုံး ရှာရန်..." oninput="searchCards()">
+      </div>
+    </div>
+
+    <div class="grid" id="flashcard-grid">
+      </div>
+
+    <div class="nav">
+      <button onclick="prevPage()">Previous</button>
+      <div class="page-info">
+          Page <span id="current-page">1</span> / <span id="total-pages">1</span>
+          <input type="number" id="page-jump-input" min="1" onchange="jumpToPage(this.value)">
+      </div>
+      <button onclick="nextPage()">Next</button>
+    </div>
+  </div>
+
+  <div class="history-link" id="history-link" onclick="showHistory()">
+    <u>ကြည့်ရှုခဲ့သော ကတ်များ (History)</u>
+  </div>
+
+  <div class="study-mode-link" onclick="showDayStudyMode()">
+    <u>Day အလိုက် စာကျက်ရန်</u>
+  </div>
+
+  <div id="historyModal" class="history-modal">
+    <div class="history-content">
+      <span class="close-button" onclick="closeHistory()">&times;</span>
+      <h3>ကြည့်ရှုခဲ့သော ကတ်များ</h3>
+      <ul id="history-list">
+        </ul>
+      <button onclick="clearHistory()" class="clear-history-btn">Clear History</button>
+    </div>
+  </div>
+
+  <div id="day-study-mode">
+    <h3>Day အလိုက် စာကျက်ရန်</h3>
+    <div class="study-controls">
+        <div class="day-nav-buttons">
+            <button onclick="prevDayStudy()">ယခင် Day</button>
+            <span class="day-display" id="study-current-day-display">Day 1</span>
+            <button onclick="nextDayStudy()">နောက် Day</button>
+        </div>
+        <div class="toggle-buttons">
+            <button id="toggle-ko-study" onclick="toggleStudyTextVisibility('ko')">ကိုရီးယား ဖျောက်ရန်</button>
+            <button id="toggle-mm-study" onclick="toggleStudyTextVisibility('mm')">မြန်မာ ဖျောက်ရန်</button>
+        </div>
+    </div>
+    <div class="study-list" id="study-card-list">
+      </div>
+    <button class="back-to-main-button" onclick="hideDayStudyMode()">Flashcard Mode သို့ ပြန်သွားရန်</button>
+  </div>
+
+
+  <script>
+    const allCards = [
+      // 쏙쏙 중급 Day 1 (20 cards per day for study mode, 9 for flashcard mode pages)
+      { ko: "가계부", mm: "အိမ်သုံးစာရင်း" },
+      { ko: "가뭄", mm: "မိုးခေါင်ခြင်း" },
+      { ko: "가사", mm: "အိမ်အလုပ်" },
+      { ko: "가상", mm: "အတု (fake)" },
+      { ko: "가입", mm: "၀င်ရောက်ခြင်း" },
+      { ko: "가족적", mm: "မိသားစုဆန်သော" },
+      { ko: "가축", mm: "ခြံမွေးတိရစ္ဆာန်" },
+      { ko: "가치", mm: "တန်ဖိုး" },
+      { ko: "각각", mm: "အသီးသီး" },
+      { ko: "각자", mm: "အသီးသီး" },
+      { ko: "각종", mm: "အမျိုးမျိုးသော" },
+      { ko: "간격", mm: "အကွာအဝေး၊ ကြား (space)" },
+      { ko: "간접", mm: "indirect / သွယ်ဝိုက်ခြင်း" },
+      { ko: "간판", mm: "ဆိုင်းဘုတ်" },
+      { ko: "갈등", mm: "သဘောထားကွဲလွဲခြင်း/ အငြင်းပွားမှု" },
+      { ko: "감각", mm: "အာရုံခံစားမှု" },
+      { ko: "감동적", mm: "ဟတ်ထိခြင်း ၊နက်နက်ရှိုင်းရှိုင်းခံစားရခြင်း" },
+      { ko: "감상", mm: "ကြည့်ရှုခံစားခြင်း" },
+      { ko: "감정", mm: "စိတ်ခံစားချက်" },
+      { ko: "감탄", mm: "အံ့အားသင့်+ ရင်ထဲထိ" }, // End of Study Day 1
+
+      // 쏙쏙 중급 Day 2
+      { ko: "강변", mm: "မြစ်ကမ်းဘေး" },
+      { ko: "개인적", mm: "ပုဂ္ဂိုလ်ရေးအရ" },
+      { ko: "개최", mm: "ဖွင့်ပွဲ" },
+      { ko: "객관적", mm: "အရှိကိုအရှိအတိုင်း လက်ခံကျင့်သုံးသော" },
+      { ko: "거래", mm: "ကူးသန်းရောင်း၀ယ်လုပ်ငန်း" },
+      { ko: "거품", mm: "အမြှုပ်၊bubble" },
+      { ko: "건강식품", mm: "ကျန်းမာရေးနဲ့ညီသောအစားအစာ" },
+      { ko: "건망증", mm: "သတိမေ့တတ်ခြင်း" },
+      { ko: "건설", mm: "ဆောက်လုပ်ရေး" },
+      { ko: "건축", mm: "ဗိသုကာပညာ" },
+      { ko: "걸음", mm: "ခြေလှမ်း" },
+      { ko: "검사", mm: "စစ်ဆေးခြင်း" },
+      { ko: "검색", mm: "ရှာဖွေခြင်း" },
+      { ko: "겁", mm: "အကြောက်တရား" },
+      { ko: "겉모습", mm: "ပုံပန်းသွင်ပြင်" },
+      { ko: "격려", mm: "အားပေးမှု" },
+      { ko: "결과", mm: "ရလဒ်" },
+      { ko: "결론", mm: "နိဂုံး" },
+      { ko: "결말", mm: "ပြီးဆုံးခြင်း" },
+      { ko: "결승", mm: "နောက်ဆုံးပွဲစဉ်" }, // End of Study Day 2
+
+      // 쏙쏙 중급 Day 3
+      { ko: "겸손", mm: "ကိုယ့်ကိုယ်ကိုနှိမ့်ချခြင်း" },
+      { ko: "경고", mm: "သတိပေးခြင်း" },
+      { ko: "경력", mm: "အလုပ်အတွေ့အကြုံ (경녁)" },
+      { ko: "경비", mm: "အသုံးစရိတ်" },
+      { ko: "경영", mm: "စီမံအုပ်ချုပ်မှု" },
+      { ko: "경우", mm: "အခြေအနေ ၊ကိစ္စရပ်" },
+      { ko: "경제", mm: "စီးပွားရေး" },
+      { ko: "경제적", mm: "ငွေရေးကြေးရေး" },
+      { ko: "경험", mm: "အတွေ့အကြုံ" },
+      { ko: "계약", mm: "စာချုပ်" },
+      { ko: "계층", mm: "လူတန်းစား" },
+      { ko: "고개", mm: "ဦးခေါင်း" },
+      { ko: "고민", mm: "စိုးရိမ်ပူပန်ခြင်း" },
+      { ko: "고백", mm: "၀န်ခံခြင်း" },
+      { ko: "고장", mm: "ပျက်စီးခြင်း" },
+      { ko: "고집", mm: "ခေါင်းမာခြင်း" },
+      { ko: "고통", mm: "ထိခိုက်နာကျင်ခြင်း" },
+      { ko: "곤란", mm: "ဒုက္ခရောက် ၊အခက်တွေ့ခြင်း" },
+      { ko: "골치", mm: "ခေါင်း" },
+      { ko: "곳곳", mm: "နေရာအနှံ့" }, // End of Study Day 3
+
+      // 쏙쏙 중급 Day 4
+      { ko: "공공장소", mm: "အများပြည်သူပိုင်နေရာ" },
+      { ko: "공동", mm: "ပူးတွဲ" },
+      { ko: "공사", mm: "ဆောက်လုပ်ရေး" },
+      { ko: "공통", mm: "အများနှင့်သက်ဆိုင်သော" },
+      { ko: "공포", mm: "ကြောက်မက်ဖွယ်ရာ" },
+      { ko: "공해", mm: "လေထုညစ်ညမ်းစေခြင်း" },
+      { ko: "과로", mm: "အလုပ်အလွန်အကျွံ့လုပ်ခြင်း" },
+      { ko: "과목", mm: "ဘာသာရပ်/ အကြောင်းအရာ" },
+      { ko: "과소비", mm: "အလွန်အကျွံ့သုံးစွဲခြင်း" },
+      { ko: "가속", mm: "အရှိန်လွန်ခြင်း" },
+      { ko: "과식", mm: "အလွန်အကျွံစားသုံးခြင်း" },
+      { ko: "과외", mm: "တစ်ဦးချင်းသင်ခြင်း" },
+      { ko: "과음", mm: "အလွန်အကျွံသောက်ခြင်း" },
+      { ko: "과정", mm: "လုပ်ငန်းစဉ်" },
+      { ko: "과제", mm: "အိမ်စာ" },
+      { ko: "관객", mm: "ပရိသတ်" },
+      { ko: "관계자", mm: "ပါ၀င်သူများ" },
+      { ko: "관광", mm: "လှည့်ပတ်ကြည့်ရှုခြင်း" },
+      { ko: "관련", mm: "ဆက်စပ်မှုရှိခြင်း" },
+      { ko: "관리", mm: "စီမံခန့်ခွဲခြင်း" }, // End of Study Day 4
+
+      // 쏙쏙 중급 Day 5
+      { ko: "관심", mm: "စိတ်၀င်စားခြင်း" },
+      { ko: "관찰", mm: "စောင့်ကြည့်ခြင်း" },
+      { ko: "광장", mm: "ကျင်းပရာနေရာ၊လေးထောင့်ကွက်၊စတုရန်း" },
+      { ko: "교육", mm: "ပညာရေး" },
+      { ko: "교재", mm: "သင်ရိုး" },
+      { ko: "교통수단", mm: "လမ်းပန်းဆက်သွယ်ရေး" },
+      { ko: "교통편", mm: "လမ်းပန်းဆက်သွယ်ရေးလမ်းကြောင်း" },
+      { ko: "교환", mm: "လဲလှယ်ခြင်း" },
+      { ko: "구두쇠", mm: "ကပ်စီးနှဲခြင်း" },
+      { ko: "구매", mm: "၀ယ်ယူခြင်း" },
+      { ko: "구멍", mm: "အပေါက်" },
+      { ko: "구별", mm: "ကွဲပြားခြားနားခြင်း" },
+      { ko: "구성", mm: "ဖွဲ့စည်းပုံ" },
+      { ko: "구입", mm: "၀ယ်ယူခြင်း" },
+      { ko: "구조", mm: "ဖွဲ့စည်းတည်ဆောက်မှု" },
+      { ko: "구체적", mm: "အသေးစိတ်ကျသော" },
+      { ko: "국가", mm: "နိုင်ငံ" },
+      { ko: "국물", mm: "ဟင်းရည်" },
+      { ko: "국민", mm: "ပြည်သူ" },
+      { ko: "국외", mm: "ပြည်ပနိုင်ငံ" }, // End of Study Day 5
+
+      // 쏙쏙 중급 Day 6
+      { ko: "군대", mm: "စစ်တပ်" },
+      { ko: "궁금증", mm: "သိချင်စိတ်၊စပ်စုခြင်း" },
+      { ko: "귀국", mm: "အမိနိုင်ငံသို့ပြန်လာခြင်း" },
+      { ko: "규칙적", mm: "ပုံမှန်ဖြစ်သော" },
+      { ko: "그늘", mm: "အရိပ်" },
+      { ko: "근로자", mm: "အလုပ်သမား" },
+      { ko: "근무", mm: "အလုပ်" },
+      { ko: "근육", mm: "ကြွက်သား" },
+      { ko: "글쓴이", mm: "စာရေးဆရာ" },
+      { ko: "글씨", mm: "စာ၊စာအရေးအသား" },
+      { ko: "글자", mm: "စာ၊ စာလုံး၊အက္ခရာ" },
+      { ko: "금액", mm: "ငွေပမာဏ" },
+      { ko: "긍정적", mm: "အကောင်းမြင်စိတ်" },
+      { ko: "기계", mm: "စက်" },
+      { ko: "기념일", mm: "အမှတ်တရ၊နေ့ထူးနေ့မြတ်" },
+      { ko: "기대", mm: "မျှော်လင့်ခြင်း" },
+      { ko: "기도", mm: "ဆုတောင်းခြင်း" },
+      { ko: "이동", mm: "လှုပ်ရှားမှု" },
+      { ko: "기록", mm: "မှတ်တမ်း" },
+      { ko: "기본", mm: "အခြေခံ" }, // End of Study Day 6
+
+      // 쏙쏙 중급 Day 7
+      { ko: "기부", mm: "လှူဒါန်းခြင်း" },
+      { ko: "기분", mm: "စိတ်အခြေအနေ" },
+      { ko: "기쁨", mm: "ပျော်ရွှင်ခြင်း" },
+      { ko: "기술", mm: "နည်းပညာ" },
+      { ko: "기억", mm: "မှတ်ဉာဏ်" },
+      { ko: "기억력", mm: "မှတ်ဉာဏ်အား" },
+      { ko: "기업", mm: "ကုမ္မဏီလုပ်ငန်း" },
+      { ko: "기운", mm: "စွမ်းအင်/အား" },
+      { ko: "기준", mm: "စံနှုန်း၊အဆင့်" },
+      { ko: "기초", mm: "အခြေခံ" },
+      { ko: "기호", mm: "သင်္ကေတ" },
+      { ko: "기혼", mm: "အိမ်ထောင်ရှင်" },
+      { ko: "기회", mm: "အခွင့်အရေး" },
+      { ko: "기후", mm: "ရာသီဥတု" },
+      { ko: "긴장감", mm: "စိုးရိမ်ပူပန်မှု" },
+      { ko: "길가", mm: "လမ်းဘေး" },
+      { ko: "길이", mm: "အရှည်၊အလျား" },
+      { ko: "김장", mm: "(ဆောင်းရာသီအတွက်) ဂင်ချီသိပ်ခြင်း" },
+      { ko: "깊이", mm: "အနက်" },
+      { ko: "껍질", mm: "အခွံ၊အရေပြား" }, // End of Study Day 7
+
+      // 쏙쏙 중급 Day 8
+      { ko: "꼬리", mm: "အမြှီး" },
+      { ko: "나들이", mm: "ပျော်ပွဲစားထွက်ခြင်း" },
+      { ko: "나머지", mm: "အကျန်၊လက်ကျန်" },
+      { ko: "나물", mm: "အရွက်" },
+      { ko: "난방", mm: "အပူပေးစနစ်" },
+      { ko: "남녀노소", mm: "လူကြီးလူငယ်ကျားမမရွေး" },
+      { ko: "남녀평등", mm: "လိင်မခွဲခြားခြင်း" },
+      { ko: "내기", mm: "အလောင်းအစား" },
+      { ko: "내용물", mm: "အကြောင်းအရာ" },
+      { ko: "냉방병", mm: "လေအေးပေးစက်" },
+      { ko: "노동", mm: "အလုပ်သမား" },
+      { ko: "노력", mm: "ကြိုးစားမှု" },
+      { ko: "노선", mm: "လမ်းကြောင်း" },
+      { ko: "노약자", mm: "သက်ကြီးရွယ်အို မသန်စွမ်းထိုင်ခုံ" },
+      { ko: "녹음", mm: "အသံသွင်းခြင်း" },
+      { ko: "농담", mm: "စနောက်ခြင်း" },
+      { ko: "농사", mm: "လယ်စိုက်ခြင်း" },
+      { ko: "농작물", mm: "ကောက်ပဲသီးနှံ" },
+      { ko: "농촌", mm: "ကျေးရွာ" },
+      { ko: "높이", mm: "အမြင့်" }, // End of Study Day 8
+
+      // 쏙쏙 중급 Day 9
+      { ko: "눈치", mm: "အရိပ်အကဲနားလည်ခြင်း" },
+      { ko: "능동적", mm: "တက်ကြွဖျတ်လတ်ခြင်း" },
+      { ko: "능력", mm: "အရည်အချင်း၊စွမ်းရည်" },
+      { ko: "다수", mm: "များပြားသောအရေအတွက်" },
+      { ko: "단계", mm: "ခြေလှမ်း၊တစ်ဆင့်ချင်း" },
+      { ko: "단기간", mm: "အချိန်တိုအတွင်း" },
+      { ko: "단속", mm: "ထိန်းချုပ်ခြင်း" },
+      { ko: "단위", mm: "ယူနစ် unit" },
+      { ko: "단체", mm: "အဖွဲ့အစည်း" },
+      { ko: "답변", mm: "အဖြေ" },
+      { ko: "당장", mm: "အခုချက်ချင်း" },
+      { ko: "당황", mm: "အလန့်တကြားခြင်း" },
+      { ko: "대도시", mm: "မြို့ကြီး" },
+      { ko: "대량", mm: "ပမာဏ၊အရေအတွက်" },
+      { ko: "대여", mm: "ချေးငှားခြင်း" },
+      { ko: "대접", mm: "ဧည့်ခံခြင်း" },
+      { ko: "대중", mm: "ပြည်သူလူထု" },
+      { ko: "대책", mm: "မူဝါဒ" },
+      { ko: "대출", mm: "ချေးငွေ" },
+      { ko: "대표", mm: "ဦးဆောင်ခြင်း" }, // End of Study Day 9
+
+      // 쏙쏙 중급 Day 10
+      { ko: "대형", mm: "ကြီးမားသော" },
+      { ko: "더위", mm: "အပူဒဏ်" },
+      { ko: "도구", mm: "ပစ္စည်း၊ကိရိယာ" },
+      { ko: "도난", mm: "ခိုးမှု" },
+      { ko: "도서", mm: "စာအုပ်" },
+      { ko: "도전", mm: "စိန်ခေါ်ခြင်း" },
+      { ko: "도중", mm: "(လုပ်နေတဲ့)အတောအတွင်း" },
+      { ko: "독립", mm: "လွတ်လပ်သော" },
+      { ko: "동굴", mm: "လိုဏ်ဂူ" },
+      { ko: "동시", mm: "တစ်ချိန်တည်း" },
+      { ko: "동작", mm: "ရွေ့လျားမှု" },
+      { ko: "등록", mm: "မှတ်ပုံတင်ခြင်း၊လျှောက်လွှာ" },
+      { ko: "마감일", mm: "နောက်ဆုံးရက်" },
+      { ko: "마당", mm: "ခြံ၀င်း" },
+      { ko: "말", mm: "စကားလုံး" },
+      { ko: "마루", mm: "သစ်သားကြမ်းပြင်" },
+      { ko: "마을", mm: "ရွာ" },
+      { ko: "마음", mm: "စိတ်ထား" },
+      { ko: "만남", mm: "တွေ့ဆုံခြင်း" },
+      { ko: "막차", mm: "နောက်ဆုံးကား၊ရထား၊ ဘတ်စ်" }, // End of Study Day 10
+
+      // 쏙쏙 중급 Day 11
+      { ko: "만약", mm: "အကယ်၍" },
+      { ko: "만족", mm: "စိတ်ကျေနပ်ခြင်း" },
+      { ko: "만족감", mm: "အားရကျေနပ်ခြင်း" },
+      { ko: "말다툼", mm: "စကားများခြင်း" },
+      { ko: "말투", mm: "စကားပြောပုံ" },
+      { ko: "맞벌이", mm: "အလုပ်ကိုယ်စီရှိသောစုံတွဲ" },
+      { ko: "매력", mm: "ဆွဲဆောင်မှု" },
+      { ko: "매력적", mm: "ဆွဲဆောင်မှုရှိခြင်း" },
+      { ko: "매연", mm: "အခိုး၊အငွေ့များ" },
+      { ko: "매점", mm: "ကိုယ်တိုင်ယူစနစ်ဖြင့်စားသောက်ရသောဆိုင်" },
+      { ko: "매진", mm: "ရောင်းကုန်" },
+      { ko: "매표소", mm: "လက်မှတ်ရုံ" },
+      { ko: "맨발", mm: "ခြေဗလာ" },
+      { ko: "맨손", mm: "လက်ဗလာ" },
+      { ko: "먼지", mm: "ဖုန်မှုန့်" },
+      { ko: "명소", mm: "ထင်ရှားသောနေရာ" },
+      { ko: "명품", mm: "ဒီဇိုင်နာလက်ရာ" },
+      { ko: "모범생", mm: "ထူးချွန်သောကျောင်းသား" },
+      { ko: "모습", mm: "ပုံပန်း၊ရုပ်ရည်သွင်ပြင်" },
+      { ko: "모양", mm: "အသွင်အပြင်" }, // End of Study Day 11
+
+      // 쏙쏙 중급 Day 12
+      { ko: "모험심", mm: "စွန့်စားခန်း" },
+      { ko: "모형", mm: "ပုံစံငယ်၊မိတ္ထူ" },
+      { ko: "목숨", mm: "အသက်၊ဘ၀" },
+      { ko: "목적지", mm: "ရည်မှန်းချက်" },
+      { ko: "무게", mm: "အလေးချိန်" },
+      { ko: "무관심", mm: "စိတ်မ၀င်စားခြင်း၊လျစ်လျူရှုခြင်း" },
+      { ko: "무늬", mm: "အဆင်၊ဒီဇိုင်း" },
+      { ko: "무대", mm: "စတိတ်စင်" },
+      { ko: "무더위", mm: "အပူလှိုင်း" },
+      { ko: "무덤", mm: "အုတ်ဂူ" },
+      { ko: "무선", mm: "ကြိုးမဲ့" },
+      { ko: "무소식", mm: "သတင်းမရှိ" },
+      { ko: "무시", mm: "လျစ်လျူရှုခြင်း" },
+      { ko: "문명", mm: "ယဉ်ကျေးမှု" },
+      { ko: "문서", mm: "စာချုပ်စာတမ်း" },
+      { ko: "문의", mm: "စုံစမ်းမေးမြန်းခြင်း" },
+      { ko: "문제점", mm: "ပြဿနာ" },
+      { ko: "문화유산", mm: "ယဉ်ကျေးမှုအမွေအနှစ်" },
+      { ko: "문화적", mm: "ယဉ်ကျေးမှုဆိုင်ရာ" },
+      { ko: "물가", mm: "ကုန်ဈေးနှုန်း" }, // End of Study Day 12
+
+      // 쏙쏙 중급 Day 13
+      { ko: "물론", mm: "သေချာပေါက်" },
+      { ko: "물질", mm: "ထုတ်ကုန်၊အရာ၀တ္ထု" },
+      { ko: "물품", mm: "အရာ၀တ္ထု၊ပစ္စည်း" },
+      { ko: "미혼", mm: "အပျို၊လူပျို" },
+      { ko: "민속놀이", mm: "ရိုးရာဂိမ်း" },
+      { ko: "민요", mm: "ရိုးရာသီချင်း" },
+      { ko: "민족", mm: "လူမျိုးစု၊မျိုးနွယ်" },
+      { ko: "믿음", mm: "ယုံကြည်ခြင်း" },
+      { ko: "밑줄", mm: "အောက်ဆုံးလိုင်း" },
+      { ko: "바깥", mm: "အပြင်ဘက်" },
+      { ko: "바닥", mm: "ကြမ်းပြင်" },
+      { ko: "바람", mm: "ဆုတောင်း" },
+      { ko: "바탕", mm: "အခြေခံ" },
+      { ko: "반복", mm: "ထပ်တလဲလဲ" },
+      { ko: "반성", mm: "ကိုယ့်ကိုယ်ကိုပြန်လည်သုံးသပ်ခြင်း" },
+      { ko: "반응", mm: "တုံ့ပြန်မှု" },
+      { ko: "반품", mm: "ပြန်ပေးခြင်း" },
+      { ko: "발걸음", mm: "ခြေလှမ်း" },
+      { ko: "발견", mm: "ရှာဖွေတွေ့ရှိခြင်း" },
+      { ko: "발급", mm: "ထုတ်ပြန်ခြင်း" }, // End of Study Day 13
+
+      // 쏙쏙 중급 Day 14
+      { ko: "발달", mm: "ဖွံ့ဖြိုးတိုးတက်မှု" },
+      { ko: "발명", mm: "တီထွင်မှု" },
+      { ko: "발전", mm: "ဖွံ့ဖြိုးတိုးတက်ခြင်း" },
+      { ko: "밤새", mm: "ညလုံးပေါက်" },
+      { ko: "방식", mm: "နည်းလမ်း" },
+      { ko: "방해", mm: "နှောင့်ယှက်ခြင်း" },
+      { ko: "방향", mm: "လမ်း‌ကြောင်း" },
+      { ko: "배경", mm: "နောက်ခံ background" },
+      { ko: "배려", mm: "ထည့်သွင်းစဉ်းစားပေးခြင်း" },
+      { ko: "배우자", mm: "ခင်ပွန်း၊ဇနီးသည်" },
+      { ko: "버릇", mm: "အကျင့် ၊အပြုအမူ" },
+      { ko: "번역", mm: "ဘာသာပြန်ခြင်း" },
+      { ko: "범위", mm: "အခွင့်အလန်းနယ်ပယ်၊အဆင့်အတန်း" },
+      { ko: "범인", mm: "တရားခံ" },
+      { ko: "범죄", mm: "ပြစ်မှု" },
+      { ko: "법", mm: "ဥပဒေ" },
+      { ko: "변경", mm: "ပြောင်းလဲခြင်း" },
+      { ko: "변명", mm: "ဆင်ခြေ" },
+      { ko: "변화", mm: "ပြောင်းလဲမှု" },
+      { ko: "별명", mm: "နာမည်ပြောင်" }, // End of Study Day 14
+
+      // 쏙쏙 중급 Day 15
+      { ko: "별일", mm: "ဘာကိစ္စမှမဟုတ်" },
+      { ko: "보고", mm: "အစီရင်ခံစာ" },
+      { ko: "보관", mm: "ထိန်းသိမ်းခြင်း" },
+      { ko: "보람", mm: "တန်ဖိုး" },
+      { ko: "보물", mm: "ရတနာ" },
+      { ko: "보충", mm: "ဖြည့်စွက်ခြင်း" },
+      { ko: "보호", mm: "ကာကွယ်ခြင်း" },
+      { ko: "복", mm: "ကံကောင်းခြင်း" },
+      { ko: "봉사", mm: "ပရဟိတ" },
+      { ko: "부담", mm: "၀န်ထုပ်၀န်ပိုး၊တာ၀န်" },
+      { ko: "부분", mm: "အပိုင်း" },
+      { ko: "부상", mm: "ထိခိုက်ဒဏ်ရာရခြင်း" },
+      { ko: "부상자", mm: "ထိခိုက်ဒဏ်ရာရသူ" },
+      { ko: "부서", mm: "ဌာန" },
+      { ko: "부자", mm: "သူဌေး" },
+      { ko: "부작용", mm: "ဘေးထွက်ဆိုးကျိုး" },
+      { ko: "부잣집", mm: "သူဌေးမိသားစု" },
+      { ko: "부장", mm: "ဌာနမှူး" },
+      { ko: "부정적", mm: "မကောင်းမြင်စိတ်" },
+      { ko: "부주의", mm: "သတိမပြုခြင်း" }, // End of Study Day 15
+
+      // 쏙쏙 중급 Day 16
+      { ko: "분량", mm: "ပမာဏ" },
+      { ko: "분리수거", mm: "တူရာစုခြင်း၊ခွဲခြားခြင်း" },
+      { ko: "분실", mm: "ပျောက်ဆုံးခြင်း" },
+      { ko: "분위기", mm: "လေထု" },
+      { ko: "불가능", mm: "မဖြစ်နိုင်ခြင်း" },
+      { ko: "불만", mm: "မကျေနပ်ဖြစ်ခြင်း" },
+      { ko: "불면증", mm: "အိပ်မပျော်တဲ့ရောဂါ" },
+      { ko: "불빛", mm: "မီးအိမ်၊အလင်းရောင်" },
+      { ko: "불안", mm: "စိတ်မအေး၊စိတ်မချခြင်း" },
+      { ko: "불안감", mm: "စိုးရိမ်ကြောင့်ကြမှု" },
+      { ko: "불평", mm: "မကျေနပ်ခြင်း၊တိုင်ကြားခြင်း" },
+      { ko: "불행", mm: "ကံဆိုးခြင်း" },
+      { ko: "비교", mm: "နှိုင်းယှဉ်ခြင်း" },
+      { ko: "비교적", mm: "နှိုင်းယှဉ်သော" },
+      { ko: "비만", mm: "အ၀လွန်ခြင်း" },
+      { ko: "비용", mm: "ကုန်ကျစရိတ်" },
+      { ko: "빚", mm: "အကြွေး" },
+      { ko: "사건", mm: "ဖြစ်ရပ်၊အမှု" },
+      { ko: "사고방식", mm: "ဖြေရှင်းပုံနည်းလမ်း ၊‌အတွေး" },
+      { ko: "사교적", mm: "ပေါင်းသင်းဆက်ဆံမှုကောင်းခြင်း" }, // End of Study Day 16
+
+      // 쏙쏙 중급 Day 17
+      { ko: "사막", mm: "သဲကန္တာရ" },
+      { ko: "사망", mm: "သေဆုံးခြင်း" },
+      { ko: "사생활", mm: "ကိုယ်ရေးကိုယ်တာ" },
+      { ko: "사실", mm: "အမှန်တရား" },
+      { ko: "사업", mm: "စီးပွားရေး" },
+      { ko: "사은품", mm: "အခမဲ့ပေးသော လက်ဆောင်" },
+      { ko: "사정", mm: "အကြောင်းပြချက်၊အကျိုးအကြောင်း" },
+      { ko: "사투리", mm: "ဒေသိယစကား" },
+      { ko: "사표", mm: "နှုတ်ထွက်စာ" },
+      { ko: "사회생활", mm: "လူနေမှုဘ၀" },
+      { ko: "사회적", mm: "လူမှုရေး" },
+      { ko: "산업", mm: "စက်မှုလုပ်ငန်း" },
+      { ko: "살림", mm: "အိမ်အကူ" },
+      { ko: "삶", mm: "ဘ၀" },
+      { ko: "상금", mm: "ဆုငွေ" },
+      { ko: "상담", mm: "ဆွေးနွေး၊အကြံပေးခြင်း" },
+      { ko: "상대", mm: "ပြိုင်ဘက်" },
+      { ko: "상대방", mm: "တစ်ဖက်လူ၊တခြားဘက်" },
+      { ko: "상승", mm: "မြင့်တက်ခြင်း" },
+      { ko: "상식", mm: "သာမန်အသိဉာဏ်၊ပညာ" }, // End of Study Day 17
+
+      // 쏙쏙 중급 Day 18
+      { ko: "상업", mm: "ကုန်သွယ်မှု၊ကူးသန်းရောင်း၀ယ်ခြင်း" },
+      { ko: "상징", mm: "သင်္ကေတ" },
+      { ko: "상태", mm: "အခြေအနေ" },
+      { ko: "상표", mm: "ကုန်တံဆိပ်" },
+      { ko: "상품권", mm: "လက်ဆောင်ကတ်" },
+      { ko: "상황", mm: "အခြေအနေ" },
+      { ko: "생김새", mm: "အင်္ဂါရပ်များ၊ပုံပန်းသွင်ပြင်" },
+      { ko: "생략", mm: "ချန်ထား၊ချုံ့ထားခြင်း" },
+      { ko: "생명", mm: "အသက်" },
+      { ko: "생산", mm: "ထုတ်လုပ်မှု" },
+      { ko: "생중계", mm: "တိုက်ရိုက်အသံထုတ်လွှင့်ခြင်း live broadcast" },
+      { ko: "생필품", mm: "နေ့စဉ်မရှိမဖြစ်လိုအပ်မှု" },
+      { ko: "생활비", mm: "နေထိုင်မှုစရိတ်" },
+      { ko: "서랍", mm: "အံဆွဲ" },
+      { ko: "서명", mm: "လက်မှတ်" },
+      { ko: "선진국", mm: "တိုးတက်ဖွံ့ဖြိုးသောနိုင်ငံ" },
+      { ko: "선착순", mm: "ဦးရာလူစနစ်" },
+      { ko: "설득", mm: "စည်းရုံး၊တိုက်တွန်းခြင်း" },
+      { ko: "설명서", mm: "အမိန့်၊အသုံးပြုသည့်နည်းလမ်း" },
+      { ko: "설문", mm: "ယေဘုယျ၊တစ်ခုလုံးခြုံငုံလေ့လာခြင်း" }, // End of Study Day 18
+
+      // 쏙쏙 중급 Day 19
+      { ko: "성능", mm: "လုပ်ဆောင်ရည်" },
+      { ko: "성별", mm: "လိင်" },
+      { ko: "성실", mm: "ယုံကြည်ခြင်း၊သစ္စာရှိခြင်း" },
+      { ko: "성인", mm: "အရွယ်ရောက်ပြီးသူ၊လူကြီး" },
+      { ko: "성적", mm: "စာမေးပွဲအမှတ်" },
+      { ko: "성형", mm: "ပလပ်စတစ်ဆာဂျုရီ" },
+      { ko: "세금", mm: "အခွန်" },
+      { ko: "세기", mm: "ရာစု" },
+      { ko: "세대", mm: "မျိုးဆက်" },
+      { ko: "세련", mm: "ပြုပြင်မွန်းမံမှု" },
+      { ko: "세상", mm: "ကမ္ဘာလောက" },
+      { ko: "세월", mm: "အချိန်၊ကာလ" },
+      { ko: "소감", mm: "ခံစားချက်" },
+      { ko: "소규모", mm: "အသေးစား scale" },
+      { ko: "소득", mm: "၀င်ငွေ" },
+      { ko: "소망", mm: "ဆန္ဒ" },
+      { ko: "소문", mm: "ကောလဟာလ" },
+      { ko: "소비", mm: "စားသုံးခြင်း၊သုံးစွဲခြင်း" },
+      { ko: "소수", mm: "အနည်းစု" },
+      { ko: "소식", mm: "သတင်း" }, // End of Study Day 19
+
+      // 쏙쏙 중급 Day 20
+      { ko: "소원", mm: "ဆန္ဒ" },
+      { ko: "소음", mm: "ဆူညံသံ" },
+      { ko: "소화", mm: "အစာချေစနစ်" },
+      { ko: "속담", mm: "စကားပုံ၊ဆိုရိုး" },
+      { ko: "속도위반", mm: "အရှိန်လွန်မောင်းနှင်ခြင်း" },
+      { ko: "속력", mm: "အမြန်နှုန်း" },
+      { ko: "손질", mm: "ပြုပြင်ထိန်းသိမ်းခြင်း၊ပြင်ဆင်ခြင" },
+      { ko: "솜씨", mm: "ကျွမ်းကျင်ခြင်း၊ လက်ရာ" },
+      { ko: "송금", mm: "ငွေပေးပို့ခြင်း" },
+      { ko: "수다", mm: "စကားများခြင်း" },
+      { ko: "수단", mm: "လမ်းကြောင်း၊နည်းလမ်း" },
+      { ko: "수도", mm: "မြို့တော်" },
+      { ko: "수량", mm: "ပမာဏ၊အရေအတွက်" },
+      { ko: "수면", mm: "အိပ်စက်ခြင်း" },
+      { ko: "수명", mm: "အသက်" },
+      { ko: "수수료", mm: "ပွဲခ" },
+      { ko: "수입", mm: "သွင်းကုန်" },
+      { ko: "수준", mm: "level" },
+      { ko: "수집", mm: "စုဆောင်းခြင်း" },
+      { ko: "수출", mm: "ထွက်ကုန်" }, // End of Study Day 20
+
+      // 쏙쏙 중급 Day 21
+      { ko: "숙박", mm: "တည်းခိုခြင်း၊နေခြင်း" },
+      { ko: "숙박비", mm: "နေစရိတ်" },
+      { ko: "숙소", mm: "တည်းခိုရာနေရာ" },
+      { ko: "순간", mm: "အခိုက်အတန့်" },
+      { ko: "습관", mm: "အလေ့အကျင့်" },
+      { ko: "습기", mm: "အစိုဓာတ်" },
+      { ko: "습도", mm: "စိုထိုင်းခြင်း" },
+      { ko: "승리", mm: "အောင်မြင်ခြင်း" },
+      { ko: "시대", mm: "ခေတ် သက်တမ်း" },
+      { ko: "시도", mm: "ကြိုးပမ်းအားထုတ်ခြင်း" },
+      { ko: "실용적", mm: "လက်တွေ့အသုံးပြုခြင်း" },
+      { ko: "실종", mm: "ပျောက်ဆုံးခြင်း" },
+      { ko: "실천", mm: "လက်တွေ့" },
+      { ko: "실험", mm: "စာမေးပွဲ" },
+      { ko: "싫증", mm: "ငြီးငွေ့ခြင်း၊ပျင်းရိခြင်း" },
+      { ko: "심리학", mm: "စိတ်ပညာ" },
+      { ko: "심부름", mm: "လက်တိုလက်တောင်းခိုင်းခြင်း" },
+      { ko: "악몽", mm: "အိမ်မက်ဆိုး" },
+      { ko: "안부", mm: "သာကြောင်းမာကြောင်းမေးခြင်း" },
+      { ko: "안색", mm: "မျက်နှာအရောင်၊အသားအရောင်" }, // End of Study Day 21
+
+      // 쏙쏙 중급 Day 22
+      { ko: "안심", mm: "စိတ်ချခြင်း" },
+      { ko: "앞날", mm: "ရှေ့ရေး၊အနာဂတ်" },
+      { ko: "야간", mm: "ညပိုင်း" },
+      { ko: "야경", mm: "ညမြင်ကွင်း" },
+      { ko: "양반", mm: "မျိုးရိုးမြင့်မြတ်သူ" },
+      { ko: "시력", mm: "အမြင်အာရုံ" },
+      { ko: "시합", mm: "ပြိုင်ပွဲ" },
+      { ko: "식생활", mm: "စားသောက်မှုပုံစံ" },
+      { ko: "신고", mm: "တိုင်ကြားခြင်း" },
+      { ko: "신기술", mm: "နည်းပညာအသစ်" },
+      { ko: "신세대", mm: "မျိုးဆက်သစ်" },
+      { ko: "신용", mm: "ယုံကြည်မှု" },
+      { ko: "신제품", mm: "ထုတ်ကုန်အသစ်" },
+      { ko: "신체", mm: "ခန္ဓာကိုယ်" },
+      { ko: "신호", mm: "သင်္ကေတ" },
+      { ko: "신혼", mm: "လက်ထပ်ခါစ" },
+      { ko: "실력", mm: "အရည်အချင်း" },
+      { ko: "실망", mm: "စိတ်ပျက်မှု" },
+      { ko: "실수", mm: "အမှား" },
+      { ko: "실시", mm: "ဆောင်ရွက်ခြင်း" }, // End of Study Day 22
+
+      // 쏙쏙 중급 Day 23
+      { ko: "양보", mm: "လက်လျော့ပေးခြင်း" },
+      { ko: "억양", mm: "လေယူလေသိမ်း" },
+      { ko: "언론", mm: "မိန့်ခွန်း" },
+      { ko: "얼룩", mm: "အစွန်းအထင်း" },
+      { ko: "업무", mm: "အလုပ်" },
+      { ko: "엉망", mm: "ညစ်ပတ်ရှုပ်ပွခြင်း၊ကမောက်ကမဖြစ်ခြင်း" },
+      { ko: "엊그제", mm: "မနေ့တစ်နေ့က" },
+      { ko: "여가", mm: "အားလပ်ချိန်" },
+      { ko: "여유", mm: "အချိန်ပို၊အရန်" },
+      { ko: "역사적", mm: "သမိုင်းနှင့်သက်ဆိုင်သော" },
+      { ko: "연구", mm: "သုတေသန" },
+      { ko: "연기", mm: "မီးခိုး" },
+      { ko: "연락", mm: "ဆက်သွယ်ခြင်း" },
+      { ko: "연령", mm: "အသက်အရွယ်" },
+      { ko: "연말", mm: "နှစ်ကုန်" },
+      { ko: "연세", mm: "အသက် (honorific)" },
+      { ko: "연장", mm: "တိုးချဲ့ခြင်း၊ ကြာမြင့်ခြင်း" },
+      { ko: "연휴", mm: "ရုံးပိတ်ရက်ရှည်" },
+      { ko: "열대야", mm: "အပူပိုင်းည" },
+      { ko: "염려", mm: "စိုးရိမ်ပူပန်ခြင်း" }, // End of Study Day 23
+
+      // 쏙쏙 중급 Day 24
+      { ko: "영향", mm: "သက်ရောက်မှု" },
+      { ko: "예상", mm: "မျှော်မှန်းခြင်း" },
+      { ko: "예절", mm: "ယဉ်ကျေးမှု" },
+      { ko: "오염", mm: "ညစ်ညမ်းခြင်း" },
+      { ko: "온도", mm: "အပူချိန်" },
+      { ko: "요금", mm: "အခကြေးငွေ" },
+      { ko: "요약", mm: "အနှစ်ချုပ်" },
+      { ko: "용돈", mm: "မုန့်ဖိုး" },
+      { ko: "용서", mm: "ခွင့်လွှတ်ခြင်း" },
+      { ko: "우울", mm: "စိတ်ဓာတ်ကျခြင်း" },
+      { ko: "운전면허", mm: "ယာဉ်မောင်းလိုင်စင်" },
+      { ko: "원인", mm: "အကြောင်းရင်း" },
+      { ko: "월급", mm: "လစာ" },
+      { ko: "위반", mm: "ချိုးဖောက်ခြင်း" },
+      { ko: "위험", mm: "အန္တရာယ်" },
+      { ko: "유교", mm: "ကွန်ဖြူးရှပ်ဝါဒ" },
+      { ko: "유리하다", mm: "အကျိုးရှိသည်၊ အားသာသည်" },
+      { ko: "유산", mm: "အမွေ" },
+      { ko: "유적지", mm: "သမိုင်းဝင်နေရာ" },
+      { ko: "유지", mm: "ထိန်းသိမ်းခြင်း" }, // End of Study Day 24
+
+      // 쏙쏙 중급 Day 25
+      { ko: "유치원", mm: "မူကြိုကျောင်း" },
+      { ko: "육아", mm: "ကလေးထိန်းခြင်း" },
+      { ko: "음력", mm: "လပြက္ခဒိန်" },
+      { ko: "응답", mm: "တုံ့ပြန်မှု၊ အဖြေ" },
+      { ko: "의견", mm: "ထင်မြင်ချက်" },
+      { ko: "의논", mm: "ဆွေးနွေးခြင်း" },
+      { ko: "의무", mm: "တာဝန်" },
+      { ko: "의식주", mm: "အစားအသောက်၊ အဝတ်အထည်၊ အိမ်ယာ" },
+      { ko: "의욕", mm: "စိတ်အားထက်သန်မှု" },
+      { ko: "의지", mm: "စိတ်ဓာတ်၊ ဆန္ဒ" },
+      { ko: "이웃", mm: "အိမ်နီးနားချင်း" },
+      { ko: "이해", mm: "နားလည်ခြင်း" },
+      { ko: "인격", mm: "ကိုယ်ရည်ကိုယ်သွေး" },
+      { ko: "인상", mm: "အထင်အမြင်" },
+      { ko: "인생", mm: "ဘဝ" },
+      { ko: "인정", mm: "အသိအမှတ်ပြုခြင်း" },
+      { ko: "인종", mm: "လူမျိုးနွယ်" },
+      { ko: "일기", mm: "ရာသီဥတုမှတ်တမ်း၊ ဒိုင်ယာရီ" },
+      { ko: "일반적", mm: "ယေဘုယျအားဖြင့်" },
+      { ko: "일부", mm: "တစ်စိတ်တစ်ပိုင်း" }, // End of Study Day 25
+
+      // 쏙쏙 중급 Day 26
+      { ko: "일생", mm: "တစ်သက်တာ" },
+      { ko: "자격", mm: "အရည်အချင်း" },
+      { ko: "자동적", mm: "အလိုအလျောက်" },
+      { ko: "자유", mm: "လွတ်လပ်မှု" },
+      { ko: "자신감", mm: "ယုံကြည်မှု" },
+      { ko: "자연", mm: "သဘာဝ" },
+      { ko: "자원봉사", mm: "စေတနာ့ဝန်ထမ်းလုပ်ငန်း" },
+      { ko: "잔소리", mm: "အပြစ်တင်ခြင်း၊ ငြီးငြူခြင်း" },
+      { ko: "장면", mm: "မြင်ကွင်း" },
+      { ko: "장점", mm: "အားသာချက်" },
+      { ko: "재산", mm: "ပိုင်ဆိုင်မှု" },
+      { ko: "재능", mm: "စွမ်းရည်၊ ပါရမီ" },
+      { ko: "재활용", mm: "ပြန်လည်အသုံးပြုခြင်း" },
+      { ko: "저작권", mm: "မူပိုင်ခွင့်" },
+      { ko: "저축", mm: "ငွေစုခြင်း" },
+      { ko: "전공", mm: "အဓိကဘာသာရပ်" },
+      { ko: "전통적", mm: "ရိုးရာ" },
+      { ko: "절반", mm: "တစ်ဝက်" },
+      { ko: "절약", mm: "ချွေတာခြင်း" },
+      { ko: "점수", mm: "ရမှတ်" }, // End of Study Day 26
+
+      // 쏙쏙 중급 Day 27
+      { ko: "정성", mm: "စိတ်ထား၊ ရိုးသားမှု" },
+      { ko: "정치", mm: "နိုင်ငံရေး" },
+      { ko: "정확", mm: "တိကျမှန်ကန်ခြင်း" },
+      { ko: "정확히", mm: "တိကျစွာ" },
+      { ko: "제도", mm: "စနစ်" },
+      { ko: "제안", mm: "အဆိုပြုချက်" },
+      { ko: "제품", mm: "ထုတ်ကုန်" },
+      { ko: "조사", mm: "စစ်တမ်း၊ စုံစမ်းစစ်ဆေးခြင်း" },
+      { ko: "조언", mm: "အကြံပေးခြင်း" },
+      { ko: "조화", mm: "လိုက်ဖက်ညီခြင်း" },
+      { ko: "졸업", mm: "ဘွဲ့ရခြင်း" },
+      { ko: "존재", mm: "တည်ရှိခြင်း" },
+      { ko: "종류", mm: "အမျိုးအစား" },
+      { ko: "중고", mm: "တစ်ပတ်ရစ်" },
+      { ko: "중요성", mm: "အရေးပါမှု" },
+      { ko: "증가", mm: "တိုးလာခြင်း" },
+      { ko: "지름길", mm: "ဖြတ်လမ်း" },
+      { ko: "지역", mm: "ဒေသ" },
+      { ko: "지위", mm: "ရာထူး၊ အဆင့်အတန်း" },
+      { ko: "직업", mm: "အလုပ်အကိုင်" }, // End of Study Day 27
+
+      // 쏙쏙 중급 Day 28
+      { ko: "직장", mm: "လုပ်ငန်းခွင်" },
+      { ko: "진리", mm: "အမှန်တရား" },
+      { ko: "질서", mm: "စည်းကမ်း" },
+      { ko: "집안일", mm: "အိမ်မှုကိစ္စ" },
+      { ko: "책임", mm: "တာဝန်" },
+      { ko: "처음", mm: "ပထမဆုံး" },
+      { ko: "체계적", mm: "စနစ်တကျ" },
+      { ko: "체력", mm: "ခန္ဓာကိုယ်ကြံ့ခိုင်မှု" },
+      { ko: "체중", mm: "ကိုယ်အလေးချိန်" },
+      { ko: "초보", mm: "အစပြုသူ" },
+      { ko: "최근", mm: "မကြာသေးမီက" },
+      { ko: "최선", mm: "အကောင်းဆုံး" },
+      { ko: "최소", mm: "အနည်းဆုံး" },
+      { ko: "최종", mm: "နောက်ဆုံး" },
+      { ko: "출산", mm: "မွေးဖွားခြင်း" },
+      { ko: "취미", mm: "ဝါသနာ" },
+      { ko: "취업", mm: "အလုပ်ရခြင်း" },
+      { ko: "칭찬", mm: "ချီးကျူးခြင်း" },
+      { ko: "통계", mm: "စာရင်းအင်း" },
+      { ko: "통역", mm: "စကားပြန်ခြင်း" }, // End of Study Day 28
+
+      // 쏙쏙 중급 Day 29
+      { ko: "통제", mm: "ထိန်းချုပ်ခြင်း" },
+      { ko: "퇴직", mm: "အငြိမ်းစားယူခြင်း" },
+      { ko: "특성", mm: "ထူးခြားချက်" },
+      { ko: "특징", mm: "ထူးခြားသောလက္ခဏာ" },
+      { ko: "파악", mm: "နားလည်သဘောပေါက်ခြင်း" },
+      { ko: "판매", mm: "ရောင်းချခြင်း" },
+      { ko: "평균", mm: "ပျမ်းမျှ" },
+      { ko: "평등", mm: "တန်းတူညီမျှမှု" },
+      { ko: "폐지", mm: "ဖျက်သိမ်းခြင်း" },
+      { ko: "포함", mm: "ပါဝင်ခြင်း" },
+      { ko: "폭력", mm: "အကြမ်းဖက်မှု" },
+      { ko: "표현", mm: "ဖော်ပြခြင်း" },
+      { ko: "필수적", mm: "မရှိမဖြစ်လိုအပ်သော" },
+      { ko: "하품", mm: "သမ်းဝေခြင်း" },
+      { ko: "한계", mm: "ကန့်သတ်ချက်" },
+      { ko: "해결", mm: "ဖြေရှင်းခြင်း" },
+      { ko: "향상", mm: "တိုးတက်ခြင်း" },
+      { ko: "현금", mm: "ငွေသား" },
+      { ko: "현대", mm: "ခေတ်သစ်" },
+      { ko: "현명", mm: "ဉာဏ်ပညာရှိခြင်း" }, // End of Study Day 29
+
+      // 쏙쏙 중급 Day 30
+      { ko: "현실", mm: "လက်တွေ့ဘဝ" },
+      { ko: "현장", mm: "လုပ်ငန်းခွင်၊ နေရာ" },
+      { ko: "협력", mm: "ပူးပေါင်းဆောင်ရွက်ခြင်း" },
+      { ko: "형태", mm: "ပုံစံ" },
+      { ko: "혜택", mm: "အကျိုးကျေးဇူး" },
+      { ko: "호감", mm: "နှစ်သက်ခြင်း" },
+      { ko: "혼란", mm: "ရှုပ်ထွေးခြင်း" },
+      { ko: "환경", mm: "ပတ်ဝန်းကျင်" },
+      { ko: "확대", mm: "ချဲ့ထွင်ခြင်း" },
+      { ko: "확인", mm: "အတည်ပြုခြင်း" },
+      { ko: "확장", mm: "ချဲ့ထွင်ခြင်း" },
+      { ko: "환불", mm: "ငွေပြန်အမ်းခြင်း" },
+      { ko: "활동", mm: "လှုပ်ရှားမှု" },
+      { ko: "효과", mm: "အကျိုးသက်ရောက်မှု" },
+      { ko: "후회", mm: "နောင်တရခြင်း" },
+      { ko: "휴식", mm: "အနားယူခြင်း" },
+      { ko: "휴지통", mm: "အမှိုက်ပုံး" },
+      { ko: "흥분", mm: "စိတ်လှုပ်ရှားခြင်း" },
+      { ko: "희생", mm: "စွန့်လွှတ်အနစ်နာခံခြင်း" },
+      { ko: "희망", mm: "မျှော်လင့်ချက်" }, // End of Study Day 30
+
+      // Additional words from your provided text, structured into days
+      // Day 31
+      { ko: "지출", mm: "ကုန်ကျစရိတ်၊ ထွက်ငွေ" },
+      { ko: "대부분", mm: "အများစု" },
+      { ko: "일단", mm: "တစ်ခါ" },
+      { ko: "차라리", mm: "ပိုကောင်းသည်" },
+      { ko: "막상", mm: "တကယ်တမ်း" },
+      { ko: "결코", mm: "ဘယ်တော့မှ" },
+      { ko: "도저히", mm: "ဘယ်လိုမှ" },
+      { ko: "비록", mm: "ဖြစ်လျှင်တောင်" },
+      { ko: "마침내", mm: "နောက်ဆုံးတော့" },
+      { ko: "오히려", mm: "အပြန်အလှန်အားဖြင့်" },
+      { ko: "이내", mm: "မကြာမီ" },
+      { ko: "과연", mm: "တကယ်လား" },
+      { ko: "그나마", mm: "အနည်းဆုံးတော့" },
+      { ko: "굳이", mm: "မဖြစ်မနေ" },
+      { ko: "모처럼", mm: "အကြာကြီးမှ တစ်ခါ" },
+      { ko: "정작", mm: "တကယ်တော့" },
+      { ko: "함부로", mm: "ပေါ့ပေါ့ဆဆ" },
+      { ko: "하긴", mm: "ပြောရမယ်ဆိုရင်" },
+      { ko: "실컷", mm: "လုံလောက်စွာ" },
+      { ko: "미처", mm: "ကြိုတင်ပြီး" }, // End of Study Day 31
+
+      // Day 32
+      { ko: "제대로", mm: "မှန်မှန်ကန်ကန်" },
+      { ko: "내내", mm: "တစ်လျှောက်လုံး" },
+      { ko: "줄곧", mm: "အမြဲတမ်း" },
+      { ko: "점점", mm: "တဖြည်းဖြည်း" },
+      { ko: "끊임없이", mm: "မရပ်မနား" },
+      { ko: "드디어", mm: "နောက်ဆုံးတော့" },
+      { ko: "굳이", mm: "မဖြစ်မနေ" },
+      { ko: "겨우", mm: " barely, 겨우" },
+      { ko: "무려", mm: "astonishingly, impressively" },
+      { ko: "점차", mm: "တဖြည်းဖြည်း" },
+      { ko: "단지", mm: " merely, simply" },
+      { ko: "대단히", mm: "အလွန်" },
+      { ko: "하마터면", mm: " almost, nearly" },
+      { ko: "결국", mm: "in the end, after all" },
+      { ko: "한층", mm: " much more, even more" },
+      { ko: "불과", mm: "only, just" },
+      { ko: "가령", mm: " for example" },
+      { ko: "막연히", mm: "vaguely, obscurely" },
+      { ko: "그나마", mm: " at least, anyway" },
+      { ko: "기껏", mm: " at best, at most" }, // End of Study Day 32
+
+      // Day 33
+      { ko: "미처", mm: " not yet, not quite" },
+      { ko: "실컷", mm: " to one's heart's content" },
+      { ko: "함부로", mm: " carelessly, thoughtlessly" },
+      { ko: "하긴", mm: " indeed, in fact" },
+      { ko: "도대체", mm: " on earth, in the world" },
+      { ko: "도무지", mm: " not at all, utterly" },
+      { ko: "아무리", mm: " however much" },
+      { ko: "새삼", mm: " anew, freshly" },
+      { ko: "혹시", mm: " perhaps, maybe" },
+      { ko: "필사적", mm: "desperate" },
+      { ko: "일방적", mm: "one-sided" },
+      { ko: "배타적", mm: "exclusive, discriminatory" },
+      { ko: "자발적", mm: "voluntary" },
+      { ko: "선천적", mm: "congenital" },
+      { ko: "후천적", mm: "acquired" },
+      { ko: "가변적", mm: "variable" },
+      { ko: "고의적", mm: "intentional" },
+      { ko: "대조적", mm: "contrasting" },
+      { ko: "대체적", mm: "alternative" },
+      { ko: "독창적", mm: "creative, original" }, // End of Study Day 33
+
+      // Day 34
+      { ko: "도전적", mm: "challenging" },
+      { ko: "물질적", mm: "material" },
+      { ko: "지속적", mm: "continuous, sustainable" },
+      { ko: "획기적", mm: "groundbreaking, epoch-making" },
+      { ko: "공격적", mm: "aggressive" },
+      { ko: "긍정적", mm: "positive" },
+      { ko: "낙관적", mm: "optimistic" },
+      { ko: "단기적", mm: "short-term" },
+      { ko: "보수적", mm: "conservative" },
+      { ko: "장기적", mm: "long-term" },
+      { ko: "적극적", mm: "active, positive" },
+      { ko: "합리적", mm: "rational, reasonable" },
+      { ko: "혁신적", mm: "innovative" },
+      { ko: "개성적", mm: "individualistic" },
+      { ko: "객관적", mm: "objective" },
+      { ko: "독단적", mm: "dogmatic, arbitrary" },
+      { ko: "부정적", mm: "negative" },
+      { ko: "비판적", mm: "critical" },
+      { ko: "이기적", mm: "selfish" },
+      { ko: "주관적", mm: "subjective" }, // End of Study Day 34
+
+      // Day 35
+      { ko: "공통적", mm: "common" },
+      { ko: "일률적", mm: "uniform" },
+      { ko: "자연적", mm: "natural" },
+      { ko: "인위적", mm: "artificial, man-made" },
+      { ko: "우발적", mm: "accidental" },
+      { ko: "우호적", mm: "friendly" },
+      { ko: "간헐적", mm: "intermittent" },
+      { ko: "단편적", mm: "fragmentary" },
+      { ko: "실질적", mm: "substantial, practical" },
+      { ko: "전반적", mm: "overall, general" },
+      { ko: "원칙적", mm: "principled" },
+      { ko: "본격적", mm: "full-scale, full-fledged" },
+      { ko: "종합적", mm: "comprehensive, synthetic" },
+      { ko: "구체적", mm: "concrete, specific" },
+      { ko: "단계적", mm: "step-by-step, gradual" },
+      { ko: "획기적", mm: "epoch-making" },
+      { ko: "역동적", mm: "dynamic" },
+      { ko: "탄력적", mm: "flexible" },
+      { ko: "개방적", mm: "open-minded" },
+      { ko: "경직적", mm: "rigid, inflexible" }, // End of Study Day 35
+
+      // Day 36
+      { ko: "본격적", mm: "အပြည့်အစုံ" },
+      { ko: "수동적", mm: "passive" },
+      { ko: "주도적", mm: "leading, initiative" },
+      { ko: "일시적", mm: "temporary" },
+      { ko: "영구적", mm: "permanent" },
+      { ko: "전면적", mm: "full-scale" },
+      { ko: "부분적", mm: "partial" },
+      { ko: "전반적", mm: "general, overall" },
+      { ko: "집단적", mm: "collective" },
+      { ko: "개인적", mm: "individual" },
+      { ko: "경제적", mm: "economic" },
+      { ko: "효율적", mm: "efficient" },
+      { ko: "사회적", mm: "social" },
+      { ko: "심리적", mm: "psychological" },
+      { ko: "정서적", mm: "emotional" },
+      { ko: "문화적", mm: "cultural" },
+      { ko: "과학적", mm: "scientific" },
+      { ko: "체계적", mm: "systematic" },
+      { ko: "역사적", mm: "historical" },
+      { ko: "전설적", mm: "legendary" }, // End of Study Day 36
+
+      // Day 37
+      { ko: "생태적", mm: "ecological" },
+      { ko: "인간적", mm: "human, humane" },
+      { ko: "직설적", mm: "direct, straightforward" },
+      { ko: "간접적", mm: "indirect" },
+      { ko: "적대적", mm: "hostile" },
+      { ko: "우호적", mm: "friendly" },
+      { ko: "미래지향적", mm: "future-oriented" },
+      { ko: "과거지향적", mm: "past-oriented" },
+      { ko: "긍정적", mm: "positive" },
+      { ko: "부정적", mm: "negative" },
+      { ko: "혁신적", mm: "innovative" },
+      { ko: "보수적", mm: "conservative" },
+      { ko: "주도적", mm: "proactive" },
+      { ko: "수동적", mm: "passive" },
+      { ko: "개방적", mm: "open" },
+      { ko: "폐쇄적", mm: "closed" },
+      { ko: "정량적", mm: "quantitative" },
+      { ko: "정성적", mm: "qualitative" },
+      { ko: "객관적", mm: "objective" },
+      { ko: "주관적", mm: "subjective" }, // End of Study Day 37
+
+      // Day 38
+      { ko: "보편적", mm: "universal" },
+      { ko: "특수적", mm: "special" },
+      { ko: "수직적", mm: "vertical" },
+      { ko: "수평적", mm: "horizontal" },
+      { ko: "일방적", mm: "unilateral" },
+      { ko: "쌍방적", mm: "bilateral" },
+      { ko: "상호적", mm: "mutual, reciprocal" },
+      { ko: "체계적", mm: "systematic" },
+      { ko: "무질서적", mm: "disorderly" },
+      { ko: "포괄적", mm: "inclusive, comprehensive" },
+      { ko: "제한적", mm: "limited, restrictive" },
+      { ko: "원칙적", mm: "principled" },
+      { ko: "예외적", mm: "exceptional" },
+      { ko: "절대적", mm: "absolute" },
+      { ko: "상대적", mm: "relative" },
+      { ko: "능률적", mm: "efficient" },
+      { ko: "비능률적", mm: "inefficient" },
+      { ko: "논리적", mm: "logical" },
+      { ko: "비논리적", mm: "illogical" },
+      { ko: "자극하다", mm: "လှုံ့ဆော်သည် နှိုးဆော်" }, // End of Study Day 38
+
+      // Day 39 (More words from the document)
+      { ko: "정체성", mm: "ကိုယ်ပိုင်လက္ခဏာ" },
+      { ko: "부피", mm: "ထုထည်" },
+      { ko: "밀도", mm: "သိပ်သည်းဆ" },
+      { ko: "부가가치세", mm: "VAT" },
+      { ko: "고정관념", mm: "စွဲလမ်းမှု၊ ထင်မြင်ယူဆချက်" },
+      { ko: "배출하다", mm: "ထုတ်လွှတ်သည်" },
+      { ko: "폐기물", mm: "စွန့်ပစ်ပစ္စည်း" },
+      { ko: "재활용", mm: "ပြန်လည်အသုံးပြုခြင်း" },
+      { ko: "자원", mm: "အရင်းအမြစ်" },
+      { ko: "수단", mm: "နည်းလမ်း၊ နည်းဗျူဟာ" },
+      { ko: "매개체", mm: "ကြားခံ" },
+      { ko: "선조", mm: "ဘိုးဘွား" },
+      { ko: "후손", mm: "မျိုးဆက်" },
+      { ko: "자손", mm: "သားမြေး" },
+      { ko: "도입", mm: "မိတ်ဆက်၊ စတင်" },
+      { ko: "배출", mm: "ထုတ်လွှတ်မှု" },
+      { ko: "재구성", mm: "ပြန်လည်ဖွဲ့စည်းခြင်း" },
+      { ko: "재연", mm: "ပြန်လည်ဖော်ပြခြင်း" },
+      { ko: "재해", mm: "ဘေးအန္တရာယ်" },
+      { ko: "구현", mm: "အကောင်အထည်ဖော်" }, // End of Study Day 39
+
+      // Day 40
+      { ko: "수준", mm: "အဆင့်အတန်း" },
+      { ko: "보편화", mm: "ယေဘုယျဖြစ်ခြင်း" },
+      { ko: "전환", mm: "ပြောင်းလဲခြင်း" },
+      { ko: "단독", mm: "တစ်ဦးတည်း" },
+      { ko: "합동", mm: "ပူးတွဲ" },
+      { ko: "통합", mm: "ပေါင်းစည်းခြင်း" },
+      { ko: "분리", mm: "ခွဲခြားခြင်း" },
+      { ko: "분산", mm: "ဖြန့်ဝေခြင်း" },
+      { ko: "집중", mm: "အာရုံစိုက်ခြင်း" },
+      { ko: "가속", mm: "အရှိန်မြှင့်" },
+      { ko: "감속", mm: "အရှိန်လျှော့" },
+      { ko: "상승", mm: "တိုးမြင့်ခြင်း" },
+      { ko: "하락", mm: "ကျဆင်းခြင်း" },
+      { ko: "긍정", mm: "အကောင်းမြင်" },
+      { ko: "부정", mm: "အဆိုးမြင်" },
+      { ko: "능동", mm: "တက်ကြွ" },
+      { ko: "수동", mm: "ငြိမ်သက်" },
+      { ko: "개방", mm: "ပွင့်လင်း" },
+      { ko: "폐쇄", mm: "ပိတ်ဆို့" },
+      { ko: "진보", mm: "တိုးတက်" }, // End of Study Day 40
+
+      // Day 41
+      { ko: "보수", mm: "ထိန်းသိမ်း" },
+      { ko: "안정", mm: "တည်ငြိမ်" },
+      { ko: "변동", mm: "ပြောင်းလဲ" },
+      { ko: "장점", mm: "အားသာချက်" },
+      { ko: "단점", mm: "အားနည်းချက်" },
+      { ko: "효율", mm: "ထိရောက်မှု" },
+      { ko: "비효율", mm: "မထိရောက်မှု" },
+      { ko: "증가", mm: "တိုးပွား" },
+      { ko: "감소", mm: "လျော့ကျ" },
+      { ko: "본질", mm: "အနှစ်သာရ" },
+      { ko: "표면", mm: "မျက်နှာပြင်" },
+      { ko: "내면", mm: "အတွင်းပိုင်း" },
+      { ko: "외면", mm: "အပြင်ပိုင်း" },
+      { ko: "근본", mm: "အခြေခံ" },
+      { ko: "지엽적", mm: "ဒေသဆိုင်ရာ" },
+      { ko: "원칙", mm: "နိယာမ" },
+      { ko: "예외", mm: "ခြွင်းချက်" },
+      { ko: "절대", mm: "လုံးဝ" },
+      { ko: "상대", mm: "ဆွေမျိုး" },
+      { ko: "논리", mm: "ယုတ္တိ" }, // End of Study Day 41
+
+      // Day 42
+      { ko: "비논리", mm: "မမှန်ကန်သောယုတ္တိ" },
+      { ko: "수익", mm: "အမြတ်အစွန်း" },
+      { ko: "비용", mm: "ကုန်ကျစရိတ်" },
+      { ko: "생산", mm: "ထုတ်လုပ်မှု" },
+      { ko: "소비", mm: "စားသုံးမှု" },
+      { ko: "수출", mm: "ပို့ကုန်" },
+      { ko: "수입", mm: "သွင်းကုန်" },
+      { ko: "성장", mm: "ကြီးထွားမှု" },
+      { ko: "쇠퇴", mm: "ကျဆင်းမှု" },
+      { ko: "부활", mm: "ပြန်လည်ရှင်သန်ခြင်း" },
+      { ko: "재건", mm: "ပြန်လည်တည်ဆောက်ခြင်း" },
+      { ko: "파괴", mm: "ဖျက်ဆီးခြင်း" },
+      { ko: "창조", mm: "ဖန်တီးခြင်း" },
+      { ko: "모방", mm: "တုပခြင်း" },
+      { ko: "개발", mm: "ဖွံ့ဖြိုးတိုးတက်မှု" },
+      { ko: "보존", mm: "ထိန်းသိမ်းမှု" },
+      { ko: "혁명", mm: "တော်လှန်ရေး" },
+      { ko: "개혁", mm: "ပြုပြင်ပြောင်းလဲရေး" },
+      { ko: "유산", mm: "အမွေအနှစ်" },
+      { ko: "창출", mm: "ဖန်တီး" }, // End of Study Day 42
+
+      // Day 43
+      { ko: "단점", mm: "အားနည်းချက်" },
+      { ko: "사원", mm: "၀န်ထမ်း" },
+      { ko: "시범", mm: "သာဓကပြ၊ သရုပ်ပြ demonstrate" },
+      { ko: "정식으로", mm: "တရား၀င်" },
+      { ko: "탄생", mm: "မွေးဖွားလာခြင်း၊ အသစ်စတင်ခြင်း" },
+      { ko: "가문", mm: "မိသားစု" },
+      { ko: "결합하다", mm: "ပေါင်းစပ်သည်" },
+      { ko: "중립적", mm: "ကြားနေ" },
+      { ko: "편파적", mm: "ဘက်လိုက်" },
+      { ko: "즉흥적", mm: "ရုတ်တရတ် ထရပ် ၊ စိတ်ကူးပေါက်တဲ့အတိုင်းလုပ် (စိတ်ခံစားချက်နောက်လိုက်)" },
+      { ko: "회의적", mm: "သံသယ၀င်" },
+      { ko: "헌신적", mm: "စိတ်ရောကိုယ်ပါနှစ်ပြီးကြိုးစား" },
+      { ko: "극단적", mm: "အဆုံးစွန်ဖြစ်သော" },
+      { ko: "환상적", mm: "စိတ်ကူးယဉ်ဆန်သော" },
+      { ko: "역동적", mm: "အားပြည့်မာန်ပြည့် တက်ကြွသော" },
+      { ko: "귀납적", mm: "ခြုံငုံဆင်ခြင်သော" },
+      { ko: "임시적", mm: "hint ပေးသော" },
+      { ko: "선정적", mm: "being sexual" },
+      { ko: "인위적", mm: "လူအင်အား" },
+      { ko: "해학적", mm: "ဟာသဆန်စွာ" }, // End of Study Day 43
+
+      // Day 44
+      { ko: "폐쇄적", mm: "ပိတ်ဆို့ထားသော" },
+      { ko: "본격적", mm: "အပြည့်အဝ၊ အမှန်တကယ်" },
+      { ko: "수용적", mm: "လက်ခံနိုင်သော" },
+      { ko: "기본적", mm: "အခြေခံ" },
+      { ko: "직관적", mm: "ဉာဏ်အလင်းရသော" },
+      { ko: "비합리적", mm: "မဆီလျော်သော" },
+      { ko: "수정적", mm: "ပြုပြင်သော" },
+      { ko: "포괄적", mm: "ပြည့်စုံသော" },
+      { ko: "파생적", mm: "ဆင်းသက်လာသော" },
+      { ko: "고립적", mm: "အထီးကျန်သော" },
+      { ko: "분리주의적", mm: "ခွဲထွက်ရေးသမား" },
+      { ko: "보편적", mm: "လူတိုင်းအတွက်" },
+      { ko: "비교적", mm: "နှိုင်းယှဉ်ချက်အရ" },
+      { ko: "제한적", mm: "ကန့်သတ်ထားသော" },
+      { ko: "지나치게", mm: "အလွန်အကျွံ" },
+      { ko: "현저히", mm: "ထင်ရှားစွာ" },
+      { ko: "정확히", mm: "အတိအကျ" },
+      { ko: "간접적으로", mm: "သွယ်ဝိုက်သောအားဖြင့်" },
+      { ko: "필사적으로", mm: "အသက်ပေးပြီး" },
+      { ko: "본능적으로", mm: "ဗီဇအတိုင်း" }, // End of Study Day 44
+
+      // Day 45
+      { ko: "정신없이", mm: "စိတ်ရှုပ်စွာ" },
+      { ko: "맹목적으로", mm: "မျက်ကန်းတစ္ဆေမကြောက်" },
+      { ko: "절대적으로", mm: "လုံးဝ" },
+      { ko: "상대적으로", mm: "နှိုင်းယှဉ်အားဖြင့်" },
+      { ko: "우연히", mm: "မတော်တဆ" },
+      { ko: "고의적으로", mm: "တမင်တကာ" },
+      { ko: "주도적으로", mm: "ဦးဆောင်ပြီး" },
+      { ko: "수동적으로", mm: "လက်ခံပြီး" },
+      { ko: "개방적으로", mm: "ပွင့်လင်းစွာ" },
+      { ko: "폐쇄적으로", mm: "ပိတ်ဆို့စွာ" },
+      { ko: "즉흥적으로", mm: "ချက်ချင်း" },
+      { ko: "체계적으로", mm: "စနစ်တကျ" },
+      { ko: "일시적으로", mm: "ခဏတာ" },
+      { ko: "영구적으로", mm: "ထာဝရ" },
+      { ko: "점진적으로", mm: "တဖြည်းဖြည်း" },
+      { ko: "급진적으로", mm: "အလျင်အမြန်" },
+      { ko: "광범위하게", mm: "ကျယ်ကျယ်ပြန့်ပြန့်" },
+      { ko: "협소하게", mm: "ကျဉ်းမြောင်းစွာ" },
+      { ko: "효율적으로", mm: "ထိရောက်စွာ" },
+      { ko: "비효율적으로", mm: "မထိရောက်စွာ" }, // End of Study Day 45
+
+      // Day 46
+      { ko: "논리적으로", mm: "ယုတ္တိရှိစွာ" },
+      { ko: "비논리적으로", mm: "ယုတ္တိမရှိစွာ" },
+      { ko: "심각하게", mm: "ပြင်းထန်စွာ" },
+      { ko: "가볍게", mm: "ပေါ့ပေါ့ပါးပါး" },
+      { ko: "명확하게", mm: "ရှင်းရှင်းလင်းလင်း" },
+      { ko: "모호하게", mm: "ဝိုးတဝါး" },
+      { ko: "정확하게", mm: "အတိအကျ" },
+      { ko: "대략적으로", mm: "ခန့်မှန်းခြေအားဖြင့်" },
+      { ko: "구체적으로", mm: "တိကျစွာ" },
+      { ko: "추상적으로", mm: " abstractly" },
+      { ko: "객관적으로", mm: "ပုဂ္ဂလဓိဋ္ဌာန်မပါဘဲ" },
+      { ko: "주관적으로", mm: "ပုဂ္ဂလဓိဋ္ဌာန်ပါဝင်စွာ" },
+      { ko: "경제적으로", mm: "ချွေတာစွာ" },
+      { ko: "재정적으로", mm: "ငွေကြေးအရ" },
+      { ko: "생태적으로", mm: "ဂေဟစနစ်အရ" },
+      { ko: "인간적으로", mm: "လူသားဆန်စွာ" },
+      { ko: "직접적으로", mm: "တိုက်ရိုက်" },
+      { ko: "간접적으로", mm: "သွယ်ဝိုက်သောအားဖြင့်" },
+      { ko: "적대적으로", mm: "ရန်လိုစွာ" },
+      { ko: "우호적으로", mm: "ရင်းနှီးစွာ" }, // End of Study Day 46
+
+      // Day 47
+      { ko: "미래지향적으로", mm: "အနာဂတ်ကိုဦးတည်ပြီး" },
+      { ko: "과거지향적으로", mm: "အတိတ်ကိုဦးတည်ပြီး" },
+      { ko: "긍정적으로", mm: "အကောင်းမြင်စွာ" },
+      { ko: "부정적으로", mm: "အဆိုးမြင်စွာ" },
+      { ko: "혁신적으로", mm: "ဆန်းသစ်တီထွင်စွာ" },
+      { ko: "보수적으로", mm: "ရှေးရိုးစွဲစွာ" },
+      { ko: "정량적으로", mm: "အရေအတွက်အရ" },
+      { ko: "정성적으로", mm: "အရည်အသွေးအရ" },
+      { ko: "수직적으로", mm: "ဒေါင်လိုက်" },
+      { ko: "수평적으로", mm: "အလျားလိုက်" },
+      { ko: "일방적으로", mm: "တစ်ဖက်သတ်" },
+      { ko: "쌍방적으로", mm: "နှစ်ဖက်" },
+      { ko: "상호적으로", mm: "အပြန်အလှန်" },
+      { ko: "보편적으로", mm: "လူတိုင်းအတွက်" },
+      { ko: "특수적으로", mm: "အထူးတလည်" },
+      { ko: "원칙적으로", mm: "နိယာမအရ" },
+      { ko: "예외적으로", mm: "ခြွင်းချက်အနေဖြင့်" },
+      { ko: "절대적으로", mm: "လုံးဝ" },
+      { ko: "상대적으로", mm: "နှိုင်းယှဉ်အားဖြင့်" },
+      { ko: "능률적으로", mm: "ထိရောက်စွာ" }, // End of Study Day 47
+
+      // Day 48
+      { ko: "비능률적으로", mm: "မထိရောက်စွာ" },
+      { ko: "수용적으로", mm: "လက်ခံနိုင်စွာ" },
+      { ko: "기본적으로", mm: "အခြေခံအားဖြင့်" },
+      { ko: "직관적으로", mm: "ဉာဏ်အလင်းဖြင့်" },
+      { ko: "비합리적으로", mm: "မဆီလျော်စွာ" },
+      { ko: "수정적으로", mm: "ပြုပြင်စွာ" },
+      { ko: "포괄적으로", mm: "ပြည့်စုံစွာ" },
+      { ko: "파생적으로", mm: "ဆင်းသက်လာစွာ" },
+      { ko: "고립적으로", mm: "အထီးကျန်စွာ" },
+      { ko: "분리주의적으로", mm: "ခွဲထွက်ရေးဆန်စွာ" },
+      { ko: "전반적으로", mm: "ခြုံငုံပြီး" },
+      { ko: "집단적으로", mm: "အစုအဖွဲ့လိုက်" },
+      { ko: "개인적으로", mm: "တစ်ဦးချင်း" },
+      { ko: "심리적으로", mm: "စိတ်ပိုင်းဆိုင်ရာအရ" },
+      { ko: "정서적으로", mm: "စိတ်ခံစားမှုအရ" },
+      { ko: "문화적으로", mm: "ယဉ်ကျေးမှုအရ" },
+      { ko: "과학적으로", mm: "သိပ္ပံနည်းကျ" },
+      { ko: "역사적으로", mm: "သမိုင်းအရ" },
+      { ko: "전설적으로", mm: "ဒဏ္ဍာရီဆန်စွာ" },
+      { ko: "사회생활", mm: "လူမှုဘဝ" }, // End of Study Day 48
+
+      // Day 49
+      { ko: "출입문", mm: "အလုပ်တံခါးပေါက်ကျဉ်းမြောင်းလာ" },
+      { ko: "정규직", mm: "permanent အလုပ်, full time အလုပ်သမား" },
+      { ko: "신규 채용", mm: "အလုပ်သမားဌားရမ်းမှု" },
+      { ko: "발휘하다", mm: "ဖော်ထုတ်ပြသသည် (အားကို)" },
+      { ko: "다루다", mm: "do, buy and sell" },
+      { ko: "인재 양성", mm: "talent person ပြုစုပျိုးထောင်ကေး" },
+      { ko: "정화 과정", mm: "သန့်စင်ခြင်းဖြစ်စဉ်" },
+      { ko: "생략하다", mm: "ကျော်သွားသည် (건너뛰다)" },
+      { ko: "보전과", mm: "ထိန်းသိမ်းခြင်း" },
+      { ko: "나아가", mm: "ဆက်လက်ပြီးတော့" },
+      { ko: "사원", mm: "၀န်ထမ်း" },
+      { ko: "시범", mm: "သာဓကပြ၊ သရုပ်ပြ demonstrate" },
+      { ko: "정식으로", mm: "တရား၀င်" },
+      { ko: "탄생", mm: "မွေးဖွားလာခြင်း၊ အသစ်စတင်ခြင်း" },
+      { ko: "가문", mm: "မိသားစု" },
+      { ko: "결합하다", mm: "ပေါင်းစပ်သည်" },
+      { ko: "중립적", mm: "ကြားနေ" },
+      { ko: "편파적", mm: "ဘက်လိုက်" },
+      { ko: "즉흥적", mm: "ရုတ်တရတ် ထရပ် ၊ စိတ်ကူးပေါက်တဲ့အတိုင်းလုပ် (စိတ်ခံစားချက်နောက်လိုက်)" },
+      { ko: "회의적", mm: "သံသယ၀င်" }, // End of Study Day 49
+
+      // Day 50
+      { ko: "헌신적", mm: "စိတ်ရောကိုယ်ပါနှစ်ပြီးကြိုးစား" },
+      { ko: "극단적", mm: "အဆုံးစွန်ဖြစ်သော" },
+      { ko: "환상적", mm: "စိတ်ကူးယဉ်ဆန်သော" },
+      { ko: "역동적", mm: "အားပြည့်မာန်ပြည့် တက်ကြွသော" },
+      { ko: "귀납적", mm: "ခြုံငုံဆင်ခြင်သော" },
+      { ko: "임시적", mm: "hint ပေးသော" },
+      { ko: "선정적", mm: "being sexual" },
+      { ko: "인위적", mm: "လူအင်အား" },
+      { ko: "해학적", mm: "ဟာသဆန်စွာ" },
+      { ko: "분기", mm: "အပိုင်းကိန်း" },
+      { ko: "반기", mm: "1/2 1분4 1분2" },
+      { ko: "천연자원", mm: "သဘာ၀အရင်းအမြစ်" },
+      { ko: "분할통치", mm: "ခွဲခြမ်းအုပ်ချုပ်ခြင်း" },
+      { ko: "해방되다 / 선정되다/ 탈출 / 탈북", mm: "လွတ်မြောက်သည်" },
+      { ko: "격퇴하다 / 방항하다/ 항거하다", mm: "ဆန့်ကျင်သည်" },
+    ];
+
+    // --- Flashcard Mode Variables ---
+    let flashcardCurrentFilteredCards = allCards; // Cards currently displayed in flashcard grid (can be search results)
+    let flashcardCurrentPage = 0; // 0-indexed page number for flashcard mode
+    const flashcardPageSize = 9; // 9 cards per page for flashcard mode
+
+    // --- Study Mode Variables ---
+    let studyCurrentDay = 1; // 1-indexed day number for study mode
+    const studyPageSize = 20; // 20 cards per page for study mode
+    const totalStudyDays = Math.ceil(allCards.length / studyPageSize); // Total days for study mode
+
+    // --- General Variables ---
+    let history = JSON.parse(localStorage.getItem('flashcardHistory')) || {};
+    let showKoreanStudyText = true; // State for study mode visibility
+    let showMyanmarStudyText = true; // State for study mode visibility
+
+
+    // --- Flashcard Mode Functions ---
+    function renderFlashcards() {
+      const grid = document.getElementById('flashcard-grid');
+      grid.innerHTML = '';
+
+      const start = flashcardCurrentPage * flashcardPageSize;
+      const end = Math.min(start + flashcardPageSize, flashcardCurrentFilteredCards.length);
+      const cardsToDisplay = flashcardCurrentFilteredCards.slice(start, end);
+
+      if (cardsToDisplay.length === 0) {
+        grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 20px; font-size: 1.2em; color: #555;">ရှာမတွေ့ပါ/ပစ္စည်းမရှိပါ (No cards found).</div>';
+        updateFlashcardPaginationInfo();
+        updateFlashcardButtons();
+        return;
+      }
+
+      cardsToDisplay.forEach(cardData => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.onclick = () => {
+          card.classList.toggle('flipped');
+          addToHistory(cardData); // Add to history when card is clicked/flipped
+        };
+
+        const inner = document.createElement('div');
+        inner.className = 'card-inner';
+
+        const front = document.createElement('div');
+        front.className = 'card-front';
+        front.innerHTML = `
+          <span class="ko-text">${cardData.ko}</span>
+          <span class="audio-text" onclick="event.stopPropagation(); speakKorean(this, '${cardData.ko}')"><u>အသံထွက်</u></span>
+        `;
+
+        const back = document.createElement('div');
+        back.className = 'card-back';
+        back.innerHTML = `
+          <span class="mm-text">${cardData.mm}</span>
+        `;
+
+        inner.appendChild(front);
+        inner.appendChild(back);
+        card.appendChild(inner);
+        grid.appendChild(card);
+      });
+
+      updateFlashcardPaginationInfo();
+      updateFlashcardButtons();
+    }
+
+    function speakKorean(buttonElement, text) {
+      if (speechSynthesis.speaking) {
+          speechSynthesis.cancel();
+      }
+
+      buttonElement.classList.add('disabled'); // Use class for styling disabled text
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'ko-KR';
+
+      const voices = speechSynthesis.getVoices();
+      let koreanVoice = voices.find(voice => voice.lang === 'ko-KR');
+
+      if (!koreanVoice) {
+        // Fallback for systems where 'ko-KR' might not be directly available
+        koreanVoice = voices.find(voice => voice.lang.startsWith('ko-') || (voice.lang.startsWith('en-') && voice.name.includes('Korean')));
+      }
+
+      if (koreanVoice) {
+        utterance.voice = koreanVoice;
+      } else {
+        console.warn('Korean voice not found. Using default voice.');
+      }
+
+      utterance.onend = () => {
+        buttonElement.classList.remove('disabled');
+      };
+
+      utterance.onerror = (event) => {
+        console.error('Speech synthesis error:', event.error);
+        buttonElement.classList.remove('disabled');
+      };
+
+      speechSynthesis.speak(utterance);
+    }
+
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+      speechSynthesis.onvoiceschanged = () => {
+        console.log('Voices changed/loaded.');
+      };
+    }
+
+    function prevPage() {
+      if (flashcardCurrentPage > 0) {
+        flashcardCurrentPage--;
+        renderFlashcards();
+      }
+    }
+
+    function nextPage() {
+      const totalPagesForCurrentFilter = Math.ceil(flashcardCurrentFilteredCards.length / flashcardPageSize);
+      if (flashcardCurrentPage + 1 < totalPagesForCurrentFilter) {
+        flashcardCurrentPage++;
+        renderFlashcards();
+      }
+    }
+
+    function updateFlashcardButtons() {
+      const prevButton = document.querySelector('.nav button:first-child');
+      const nextButton = document.querySelector('.nav button:last-child');
+      const totalPagesForCurrentFilter = Math.ceil(flashcardCurrentFilteredCards.length / flashcardPageSize);
+
+      prevButton.disabled = flashcardCurrentPage === 0;
+      nextButton.disabled = (flashcardCurrentPage + 1) >= totalPagesForCurrentFilter || flashcardCurrentFilteredCards.length === 0;
+    }
+
+    function updateFlashcardPaginationInfo() {
+      const currentPageSpan = document.getElementById('current-page');
+      const totalPagesSpan = document.getElementById('total-pages');
+      const pageJumpInput = document.getElementById('page-jump-input');
+
+      const totalPagesForCurrentFilter = Math.ceil(flashcardCurrentFilteredCards.length / flashcardPageSize);
+
+      currentPageSpan.textContent = flashcardCurrentFilteredCards.length === 0 ? 0 : flashcardCurrentPage + 1;
+      totalPagesSpan.textContent = totalPagesForCurrentFilter;
+      pageJumpInput.value = flashcardCurrentFilteredCards.length === 0 ? 0 : flashcardCurrentPage + 1;
+      pageJumpInput.max = totalPagesForCurrentFilter > 0 ? totalPagesForCurrentFilter : 1;
+      pageJumpInput.min = 1;
+      pageJumpInput.disabled = flashcardCurrentFilteredCards.length === 0;
+    }
+
+    function jumpToPage(inputPage) {
+      let newPage = parseInt(inputPage);
+      const totalPagesForCurrentFilter = Math.ceil(flashcardCurrentFilteredCards.length / flashcardPageSize);
+
+      if (isNaN(newPage) || newPage < 1) {
+          newPage = 1;
+      } else if (newPage > totalPagesForCurrentFilter) {
+          newPage = totalPagesForCurrentFilter;
+      }
+
+      if (flashcardCurrentFilteredCards.length === 0) {
+          flashcardCurrentPage = 0;
+      } else {
+          flashcardCurrentPage = newPage - 1; // Convert to 0-indexed
+      }
+      renderFlashcards();
+    }
+
+    // Search Functionality (for Flashcard Mode)
+    function searchCards() {
+        const searchTerm = document.getElementById('search-input').value.toLowerCase().trim();
+
+        if (searchTerm === '') {
+            flashcardCurrentFilteredCards = allCards; // Reset to all cards
+        } else {
+            flashcardCurrentFilteredCards = allCards.filter(card =>
+                card.ko.toLowerCase().includes(searchTerm) || card.mm.toLowerCase().includes(searchTerm)
+            );
+        }
+        flashcardCurrentPage = 0; // Reset to first page of search results
+        renderFlashcards();
+    }
+
+    // --- History Functions ---
+    function addToHistory(cardData) {
+        const key = `${cardData.ko}|${cardData.mm}`; // Unique key for each card
+
+        if (history[key]) {
+            history[key].count++;
+        } else {
+            history[key] = { ...cardData, count: 1 };
+        }
+        localStorage.setItem('flashcardHistory', JSON.stringify(history));
+    }
+
+    function showHistory() {
+        const historyList = document.getElementById('history-list');
+        historyList.innerHTML = '';
+        const historyArray = Object.values(history).sort((a, b) => b.count - a.count); // Sort by most viewed
+
+        if (historyArray.length === 0) {
+            historyList.innerHTML = '<li style="text-align: center;">No history yet.</li>';
+        } else {
+            historyArray.forEach(item => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <span class="ko-mm-text">${item.ko} - ${item.mm}</span>
+                    <span class="count-text">( ${item.count} ကြိမ် ကြည့်ရှုခဲ့သည်)</span>
+                    <span class="audio-text" onclick="event.stopPropagation(); speakKorean(this, '${item.ko}')" style="font-size: 14px; margin-left: 10px;"><u>အသံထွက်</u></span>
+                `;
+                historyList.appendChild(li);
+            });
+        }
+        document.getElementById('historyModal').style.display = 'flex'; // Show the modal
+    }
+
+    function closeHistory() {
+        document.getElementById('historyModal').style.display = 'none'; // Hide the modal
+    }
+
+    function clearHistory() {
+        history = {}; // Reset history object
+        localStorage.removeItem('flashcardHistory');
+        showHistory(); // Refresh history display
+    }
+
+    // --- Day Study Mode Functions ---
+    function showDayStudyMode() {
+        document.getElementById('flashcard-mode').style.display = 'none';
+        document.getElementById('history-link').style.display = 'none'; // Hide history link
+        document.querySelector('.study-mode-link').style.display = 'none'; // Hide itself
+        document.getElementById('day-study-mode').style.display = 'flex'; // Show the study mode
+        renderStudyCards(studyCurrentDay); // Render current day's cards
+    }
+
+    function hideDayStudyMode() {
+        document.getElementById('flashcard-mode').style.display = 'flex'; // Show flashcard mode
+        document.getElementById('history-link').style.display = 'block'; // Show history link
+        document.querySelector('.study-mode-link').style.display = 'block'; // Show itself
+        document.getElementById('day-study-mode').style.display = 'none'; // Hide study mode
+    }
+
+    function renderStudyCards(day) {
+        studyCurrentDay = day;
+        document.getElementById('study-current-day-display').textContent = `Day ${day}`;
+
+        const studyCardList = document.getElementById('study-card-list');
+        studyCardList.innerHTML = '';
+
+        const startIndex = (day - 1) * studyPageSize;
+        const endIndex = Math.min(startIndex + studyPageSize, allCards.length);
+        const cardsToDisplay = allCards.slice(startIndex, endIndex);
+
+        if (cardsToDisplay.length === 0) {
+            studyCardList.innerHTML = '<div style="text-align: center; padding: 20px; font-size: 1.2em; color: #555;">ဤ Day အတွက် စာလုံးများ မရှိပါ (No words for this Day).</div>';
+        } else {
+            cardsToDisplay.forEach(cardData => {
+                const item = document.createElement('div');
+                item.className = 'study-item';
+                item.innerHTML = `
+                    <span class="ko-text ${showKoreanStudyText ? '' : 'hidden'}">${cardData.ko}</span>
+                    <span class="audio-text" onclick="event.stopPropagation(); speakKorean(this, '${cardData.ko}')"><u>အသံထွက်</u></span>
+                    <span class="mm-text ${showMyanmarStudyText ? '' : 'hidden'}">${cardData.mm}</span>
+                `;
+                studyCardList.appendChild(item);
+            });
+        }
+        updateStudyNavButtons();
+        updateStudyToggleButtonText();
+        applyStudyTextVisibility(); // Ensure initial visibility is correct
+    }
+
+    function prevDayStudy() {
+        if (studyCurrentDay > 1) {
+            studyCurrentDay--;
+            renderStudyCards(studyCurrentDay);
+        }
+    }
+
+    function nextDayStudy() {
+        if (studyCurrentDay < totalStudyDays) {
+            studyCurrentDay++;
+            renderStudyCards(studyCurrentDay);
+        }
+    }
+
+    function updateStudyNavButtons() {
+        document.querySelector('.study-controls .day-nav-buttons button:first-child').disabled = (studyCurrentDay === 1);
+        document.querySelector('.study-controls .day-nav-buttons button:last-child').disabled = (studyCurrentDay >= totalStudyDays || allCards.length === 0);
+    }
+
+    function toggleStudyTextVisibility(lang) {
+        if (lang === 'ko') {
+            showKoreanStudyText = !showKoreanStudyText;
+        } else if (lang === 'mm') {
+            showMyanmarStudyText = !showMyanmarStudyText;
+        }
+        applyStudyTextVisibility();
+        updateStudyToggleButtonText();
+    }
+
+    function applyStudyTextVisibility() {
+        document.querySelectorAll('#study-card-list .ko-text').forEach(span => {
+            span.classList.toggle('hidden', !showKoreanStudyText);
+        });
+        document.querySelectorAll('#study-card-list .mm-text').forEach(span => {
+            span.classList.toggle('hidden', !showMyanmarStudyText);
+        });
+    }
+
+    function updateStudyToggleButtonText() {
+        document.getElementById('toggle-ko-study').textContent = showKoreanStudyText ? 'ကိုရီးယား ဖျောက်ရန်' : 'ကိုရီးယား ပြရန်';
+        document.getElementById('toggle-ko-study').classList.toggle('active', !showKoreanStudyText);
+        document.getElementById('toggle-mm-study').textContent = showMyanmarStudyText ? 'မြန်မာ ဖျောက်ရန်' : 'မြန်မာ ပြရန်';
+        document.getElementById('toggle-mm-study').classList.toggle('active', !showMyanmarStudyText);
+    }
+
+
+    // --- Initialization ---
+    document.addEventListener('DOMContentLoaded', () => {
+      renderFlashcards(); // Load initial flashcard view
+      // Pre-fetch voices for faster speech synthesis
+      if (speechSynthesis.getVoices().length === 0) {
+        speechSynthesis.onvoiceschanged = () => {
+          console.log('Speech voices loaded.');
+        };
+      }
+    });
+
+    // Close modal if clicked outside of content
+    window.onclick = function(event) {
+        const historyModal = document.getElementById('historyModal');
+        if (event.target == historyModal) {
+            historyModal.style.display = "none";
+        }
+    }
+  </script>
+</body>
+</html>
